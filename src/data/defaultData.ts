@@ -42,8 +42,8 @@ export const defaultWeddingSettings: WeddingSettings = {
   footer_message: 'Your blessings and presence are the greatest gifts we could ever receive as we embark on this sacred journey together.',
 
   cover_image_url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1920&q=85',
-  music_url: 'https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3',
-  music_title: 'Royal Shehnai & Sitar Melody',
+  music_url: '/music/wedding-music.mp3',
+  music_title: 'The Mountain Wedding Melody',
   music_enabled: true
 };
 
