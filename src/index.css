@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-gold: #D4AF37;
+  --color-deep-gold: #B8860B;
+  --color-maroon: #4A0E1B;
+  --color-burgundy: #6D1427;
+  --color-cream: #FFF8E7;
+  --color-ivory: #FFFCF5;
+  --color-dark-text: #2B1717;
+}
+
+/* Base resets & typography */
+html {
+  scroll-behavior: smooth;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #FFFCF5;
+  color: #2B1717;
+  overflow-x: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background: radial-gradient(circle at 50% 0%, #FFFDF9 0%, #FFF8E7 100%);
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FFF8E7;
+}
+::-webkit-scrollbar-thumb {
+  background: #D4AF37;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B8860B;
+}
+
+/* Modal containment per modern-web-guidance */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+/* Royal Ornaments & Utilities */
+.font-heading {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+.font-couple {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+.font-script {
+  font-family: 'Great Vibes', cursive;
+}
+
+/* Gold Gradient Text */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #D4AF37 0%, #FFDF73 50%, #B8860B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-maroon-gradient {
+  background: linear-gradient(135deg, #6D1427 0%, #4A0E1B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Royal Gold Borders */
+.border-royal-gold {
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.15), inset 0 0 15px rgba(212, 175, 55, 0.05);
+}
+
+.border-royal-double {
+  border: 3px double #D4AF37;
+}
+
+/* Royal Pattern Background */
+.bg-mandala-pattern {
+  background-color: #4A0E1B;
+  background-image: radial-gradient(#D4AF37 0.75px, transparent 0.75px), radial-gradient(#D4AF37 0.75px, #4A0E1B 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+.bg-cream-pattern {
+  background-color: #FFFDF9;
+  background-image: radial-gradient(rgba(212, 175, 55, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Royal Card Style */
+.royal-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 10px 30px -5px rgba(74, 14, 27, 0.06), 0 0 0 1px rgba(212, 175, 55, 0.15);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.royal-card:hover {
+  border-color: rgba(212, 175, 55, 0.8);
+  box-shadow: 0 15px 35px -5px rgba(74, 14, 27, 0.12), 0 0 20px rgba(212, 175, 55, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Corner flourishes for luxury cards */
+.corner-flourish::before,
+.corner-flourish::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: #D4AF37;
+  pointer-events: none;
+}
+.corner-flourish::before {
+  top: 6px;
+  left: 6px;
+  border-top: 2px solid #D4AF37;
+  border-left: 2px solid #D4AF37;
+}
+.corner-flourish::after {
+  bottom: 6px;
+  right: 6px;
+  border-bottom: 2px solid #D4AF37;
+  border-right: 2px solid #D4AF37;
+}
+
+/* Shimmer Button */
+.btn-royal-gold {
+  background: linear-gradient(135deg, #D4AF37 0%, #E6C25B 50%, #B8860B 100%);
+  color: #2B1717;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid #FFE17D;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-royal-gold:hover {
+  box-shadow: 0 6px 25px rgba(212, 175, 55, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-royal-maroon {
+  background: linear-gradient(135deg, #4A0E1B 0%, #6D1427 100%);
+  color: #FFF8E7;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  box-shadow: 0 4px 15px rgba(74, 14, 27, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-royal-maroon:hover {
+  background: linear-gradient(135deg, #5b1122 0%, #7d172e 100%);
+  box-shadow: 0 6px 20px rgba(74, 14, 27, 0.45);
+  transform: translateY(-1px);
+}
