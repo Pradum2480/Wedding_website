@@ -153,28 +153,34 @@ ALTER TABLE public.wedding_rsvps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.website_settings ENABLE ROW LEVEL SECURITY;
 
 -- 3.1 Public Read Policies (Visitors can read published content)
+DROP POLICY IF EXISTS "Public can view wedding settings" ON public.wedding_settings;
 CREATE POLICY "Public can view wedding settings"
     ON public.wedding_settings FOR SELECT
     USING (true);
 
+DROP POLICY IF EXISTS "Public can view published events" ON public.wedding_events;
 CREATE POLICY "Public can view published events"
     ON public.wedding_events FOR SELECT
     USING (is_published = true);
 
+DROP POLICY IF EXISTS "Public can view published albums" ON public.wedding_albums;
 CREATE POLICY "Public can view published albums"
     ON public.wedding_albums FOR SELECT
     USING (is_published = true);
 
+DROP POLICY IF EXISTS "Public can view published photos" ON public.wedding_photos;
 CREATE POLICY "Public can view published photos"
     ON public.wedding_photos FOR SELECT
     USING (is_published = true);
 
+DROP POLICY IF EXISTS "Public can view website settings" ON public.website_settings;
 CREATE POLICY "Public can view website settings"
     ON public.website_settings FOR SELECT
     USING (true);
 
 -- 3.2 RSVP Policies:
 -- Public can INSERT their RSVP response
+DROP POLICY IF EXISTS "Public can submit RSVP" ON public.wedding_rsvps;
 CREATE POLICY "Public can submit RSVP"
     ON public.wedding_rsvps FOR INSERT
     WITH CHECK (
@@ -188,6 +194,7 @@ CREATE POLICY "Public can submit RSVP"
 
 -- 3.3 Authenticated Admin Full CRUD Policies
 -- Wedding Settings Admin
+DROP POLICY IF EXISTS "Admins full access to wedding settings" ON public.wedding_settings;
 CREATE POLICY "Admins full access to wedding settings"
     ON public.wedding_settings FOR ALL
     TO authenticated
@@ -195,6 +202,7 @@ CREATE POLICY "Admins full access to wedding settings"
     WITH CHECK (true);
 
 -- Wedding Events Admin
+DROP POLICY IF EXISTS "Admins full access to wedding events" ON public.wedding_events;
 CREATE POLICY "Admins full access to wedding events"
     ON public.wedding_events FOR ALL
     TO authenticated
@@ -202,6 +210,7 @@ CREATE POLICY "Admins full access to wedding events"
     WITH CHECK (true);
 
 -- Wedding Albums Admin
+DROP POLICY IF EXISTS "Admins full access to wedding albums" ON public.wedding_albums;
 CREATE POLICY "Admins full access to wedding albums"
     ON public.wedding_albums FOR ALL
     TO authenticated
@@ -209,6 +218,7 @@ CREATE POLICY "Admins full access to wedding albums"
     WITH CHECK (true);
 
 -- Wedding Photos Admin
+DROP POLICY IF EXISTS "Admins full access to wedding photos" ON public.wedding_photos;
 CREATE POLICY "Admins full access to wedding photos"
     ON public.wedding_photos FOR ALL
     TO authenticated
@@ -216,6 +226,7 @@ CREATE POLICY "Admins full access to wedding photos"
     WITH CHECK (true);
 
 -- Wedding RSVPs Admin
+DROP POLICY IF EXISTS "Admins full access to RSVPs" ON public.wedding_rsvps;
 CREATE POLICY "Admins full access to RSVPs"
     ON public.wedding_rsvps FOR ALL
     TO authenticated
@@ -223,6 +234,7 @@ CREATE POLICY "Admins full access to RSVPs"
     WITH CHECK (true);
 
 -- Website Settings Admin
+DROP POLICY IF EXISTS "Admins full access to website settings" ON public.website_settings;
 CREATE POLICY "Admins full access to website settings"
     ON public.website_settings FOR ALL
     TO authenticated
@@ -239,17 +251,20 @@ ON CONFLICT (id) DO UPDATE SET public = true;
 
 -- Storage RLS Policies
 -- Allow public to view media
+DROP POLICY IF EXISTS "Public can view wedding media" ON storage.objects;
 CREATE POLICY "Public can view wedding media"
     ON storage.objects FOR SELECT
     USING (bucket_id = 'wedding-media');
 
 -- Allow authenticated admins to upload media
+DROP POLICY IF EXISTS "Admins can upload wedding media" ON storage.objects;
 CREATE POLICY "Admins can upload wedding media"
     ON storage.objects FOR INSERT
     TO authenticated
     WITH CHECK (bucket_id = 'wedding-media');
 
 -- Allow authenticated admins to update/replace media
+DROP POLICY IF EXISTS "Admins can update wedding media" ON storage.objects;
 CREATE POLICY "Admins can update wedding media"
     ON storage.objects FOR UPDATE
     TO authenticated
@@ -257,6 +272,7 @@ CREATE POLICY "Admins can update wedding media"
     WITH CHECK (bucket_id = 'wedding-media');
 
 -- Allow authenticated admins to delete media
+DROP POLICY IF EXISTS "Admins can delete wedding media" ON storage.objects;
 CREATE POLICY "Admins can delete wedding media"
     ON storage.objects FOR DELETE
     TO authenticated
