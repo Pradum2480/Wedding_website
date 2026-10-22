@@ -10,12 +10,17 @@ export interface SupabaseConfig {
   source: 'env' | 'storage' | 'none';
 }
 
+const cleanUrl = (url: string | undefined): string => {
+  if (!url) return '';
+  return url.trim().replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+};
+
 export const getSupabaseConfig = (): SupabaseConfig => {
-  const envUrl = import.meta.env.VITE_SUPABASE_URL;
-  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const envUrl = cleanUrl(import.meta.env.VITE_SUPABASE_URL);
+  const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
   
-  const storedUrl = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_URL) : null;
-  const storedKey = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_KEY) : null;
+  const storedUrl = typeof window !== 'undefined' ? cleanUrl(localStorage.getItem(STORAGE_KEY_URL) || '') : '';
+  const storedKey = typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_KEY_KEY) || '').trim() : '';
 
   if (storedUrl && storedKey) {
     return {
@@ -45,7 +50,7 @@ export const getSupabaseConfig = (): SupabaseConfig => {
 
 export const saveSupabaseConfig = (url: string, anonKey: string) => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY_URL, url.trim());
+    localStorage.setItem(STORAGE_KEY_URL, cleanUrl(url));
     localStorage.setItem(STORAGE_KEY_KEY, anonKey.trim());
   }
 };
