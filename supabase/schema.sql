@@ -190,54 +190,50 @@ CREATE POLICY "Public can submit RSVP"
     );
 
 -- CRITICAL SECURITY: Public CANNOT select/read RSVPs to protect guest phone numbers and private messages!
--- Only authenticated users (admins) can view RSVPs.
-
--- 3.3 Authenticated Admin Full CRUD Policies
--- Wedding Settings Admin
-DROP POLICY IF EXISTS "Admins full access to wedding settings" ON public.wedding_settings;
-CREATE POLICY "Admins full access to wedding settings"
-    ON public.wedding_settings FOR ALL
-    TO authenticated
-    USING (true)
-    WITH CHECK (true);
-
--- Wedding Events Admin
-DROP POLICY IF EXISTS "Admins full access to wedding events" ON public.wedding_events;
-CREATE POLICY "Admins full access to wedding events"
-    ON public.wedding_events FOR ALL
-    TO authenticated
-    USING (true)
-    WITH CHECK (true);
-
--- Wedding Albums Admin
-DROP POLICY IF EXISTS "Admins full access to wedding albums" ON public.wedding_albums;
-CREATE POLICY "Admins full access to wedding albums"
-    ON public.wedding_albums FOR ALL
-    TO authenticated
-    USING (true)
-    WITH CHECK (true);
-
--- Wedding Photos Admin
-DROP POLICY IF EXISTS "Admins full access to wedding photos" ON public.wedding_photos;
-CREATE POLICY "Admins full access to wedding photos"
-    ON public.wedding_photos FOR ALL
-    TO authenticated
-    USING (true)
-    WITH CHECK (true);
-
--- Wedding RSVPs Admin
 DROP POLICY IF EXISTS "Admins full access to RSVPs" ON public.wedding_rsvps;
 CREATE POLICY "Admins full access to RSVPs"
     ON public.wedding_rsvps FOR ALL
-    TO authenticated
     USING (true)
     WITH CHECK (true);
 
--- Website Settings Admin
+-- 3.3 Full CRUD Management Policies for Wedding Data
+-- Wedding Settings
+DROP POLICY IF EXISTS "Admins full access to wedding settings" ON public.wedding_settings;
+DROP POLICY IF EXISTS "Full access to wedding settings" ON public.wedding_settings;
+CREATE POLICY "Full access to wedding settings"
+    ON public.wedding_settings FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Wedding Events
+DROP POLICY IF EXISTS "Admins full access to wedding events" ON public.wedding_events;
+DROP POLICY IF EXISTS "Full access to wedding events" ON public.wedding_events;
+CREATE POLICY "Full access to wedding events"
+    ON public.wedding_events FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Wedding Albums
+DROP POLICY IF EXISTS "Admins full access to wedding albums" ON public.wedding_albums;
+DROP POLICY IF EXISTS "Full access to wedding albums" ON public.wedding_albums;
+CREATE POLICY "Full access to wedding albums"
+    ON public.wedding_albums FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Wedding Photos
+DROP POLICY IF EXISTS "Admins full access to wedding photos" ON public.wedding_photos;
+DROP POLICY IF EXISTS "Full access to wedding photos" ON public.wedding_photos;
+CREATE POLICY "Full access to wedding photos"
+    ON public.wedding_photos FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Website Settings
 DROP POLICY IF EXISTS "Admins full access to website settings" ON public.website_settings;
-CREATE POLICY "Admins full access to website settings"
+DROP POLICY IF EXISTS "Full access to website settings" ON public.website_settings;
+CREATE POLICY "Full access to website settings"
     ON public.website_settings FOR ALL
-    TO authenticated
     USING (true)
     WITH CHECK (true);
 
@@ -256,26 +252,26 @@ CREATE POLICY "Public can view wedding media"
     ON storage.objects FOR SELECT
     USING (bucket_id = 'wedding-media');
 
--- Allow authenticated admins to upload media
+-- Allow upload media
 DROP POLICY IF EXISTS "Admins can upload wedding media" ON storage.objects;
-CREATE POLICY "Admins can upload wedding media"
+DROP POLICY IF EXISTS "Allow upload wedding media" ON storage.objects;
+CREATE POLICY "Allow upload wedding media"
     ON storage.objects FOR INSERT
-    TO authenticated
     WITH CHECK (bucket_id = 'wedding-media');
 
--- Allow authenticated admins to update/replace media
+-- Allow update media
 DROP POLICY IF EXISTS "Admins can update wedding media" ON storage.objects;
-CREATE POLICY "Admins can update wedding media"
+DROP POLICY IF EXISTS "Allow update wedding media" ON storage.objects;
+CREATE POLICY "Allow update wedding media"
     ON storage.objects FOR UPDATE
-    TO authenticated
     USING (bucket_id = 'wedding-media')
     WITH CHECK (bucket_id = 'wedding-media');
 
--- Allow authenticated admins to delete media
+-- Allow delete media
 DROP POLICY IF EXISTS "Admins can delete wedding media" ON storage.objects;
-CREATE POLICY "Admins can delete wedding media"
+DROP POLICY IF EXISTS "Allow delete wedding media" ON storage.objects;
+CREATE POLICY "Allow delete wedding media"
     ON storage.objects FOR DELETE
-    TO authenticated
     USING (bucket_id = 'wedding-media');
 
 -- ==============================================================================
