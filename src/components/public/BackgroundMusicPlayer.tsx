@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useWedding } from '../../context/WeddingContext';
-import { Volume2, VolumeX, Music, AlertCircle } from 'lucide-react';
+import { Volume2, VolumeX, Music, Disc } from 'lucide-react';
 
 export const BackgroundMusicPlayer: React.FC = () => {
   const { settings, websiteSettings, musicPlaying, toggleMusic, setMusicPlaying } = useWedding();
@@ -37,33 +37,43 @@ export const BackgroundMusicPlayer: React.FC = () => {
         onError={() => setLoadError(true)}
       />
 
-      {/* Floating Audio Badge */}
-      <div className="fixed bottom-5 right-5 z-40">
+      {/* Floating Audio Badge with Revolving Royal Disc and Equalizer */}
+      <div className="fixed bottom-5 right-5 z-40 select-none">
         <button
           onClick={toggleMusic}
-          className={`flex items-center space-x-2 px-3.5 py-2.5 rounded-full shadow-gold-glow backdrop-blur-md transition-all duration-300 border cursor-pointer ${
+          className={`flex items-center space-x-3 px-4 py-2.5 rounded-full shadow-gold-glow backdrop-blur-md transition-all duration-500 border-2 cursor-pointer group hover:scale-105 active:scale-95 ${
             musicPlaying
-              ? 'bg-maroon/95 text-gold border-gold scale-105'
-              : 'bg-[#FFFDF9]/95 text-dark-text border-gold/40 hover:border-gold'
+              ? 'bg-maroon text-gold border-gold shadow-gold-glow-lg'
+              : 'bg-[#FFFDF9]/95 text-dark-text border-gold/40 hover:border-gold hover:text-maroon'
           }`}
-          title={musicPlaying ? 'Pause Background Music' : 'Play Royal Wedding Music'}
+          title={musicPlaying ? 'Pause Royal Wedding Music' : 'Play Royal Wedding Music'}
           aria-label={musicPlaying ? 'Pause Music' : 'Play Music'}
         >
           {musicPlaying ? (
             <>
-              <div className="relative">
-                <Volume2 className="w-4 h-4 text-gold animate-pulse" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-gold animate-ping" />
+              {/* Revolving Royal Vinyl / Disc */}
+              <div className="relative w-6 h-6 flex items-center justify-center">
+                <Disc className="w-6 h-6 text-gold animate-orbit-cw" />
+                <span className="w-1.5 h-1.5 rounded-full bg-gold-light absolute" />
               </div>
-              <span className="text-[11px] font-heading font-semibold max-w-[120px] truncate hidden sm:inline">
+
+              {/* Dynamic Dancing Audio Equalizer Bars */}
+              <div className="flex items-end space-x-0.5 h-4.5 px-0.5" aria-hidden="true">
+                <span className="w-1 bg-gold rounded-full eq-bar-1" />
+                <span className="w-1 bg-gold-light rounded-full eq-bar-2" />
+                <span className="w-1 bg-gold rounded-full eq-bar-3" />
+                <span className="w-1 bg-gold-light rounded-full eq-bar-4" />
+              </div>
+
+              <span className="text-xs font-heading font-bold tracking-wide max-w-[120px] truncate hidden sm:inline text-gold">
                 {settings.music_title || 'Royal Shehnai'}
               </span>
             </>
           ) : (
             <>
-              <VolumeX className="w-4 h-4 text-dark-muted" />
-              <span className="text-[11px] font-heading font-medium text-dark-muted hidden sm:inline">
-                Play Music
+              <VolumeX className="w-4 h-4 text-dark-muted group-hover:text-maroon transition-colors" />
+              <span className="text-xs font-heading font-semibold text-dark-muted group-hover:text-maroon transition-colors hidden sm:inline">
+                Play Royal Music
               </span>
             </>
           )}

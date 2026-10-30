@@ -21,11 +21,21 @@ html {
   overflow-x: hidden;
 }
 
+/* Prevent text from spilling out of containers across all screen sizes */
+p, h1, h2, h3, h4, h5, h6, span, a, button, label {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -44,13 +54,16 @@ body {
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: #FFF8E7;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #D4AF37;
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #B8860B;
 }
@@ -59,6 +72,7 @@ body {
 dialog:modal {
   overscroll-behavior: contain;
 }
+
 dialog::backdrop {
   overflow: hidden;
   overscroll-behavior: contain;
@@ -68,9 +82,11 @@ dialog::backdrop {
 .font-heading {
   font-family: 'Cormorant Garamond', Georgia, serif;
 }
+
 .font-couple {
   font-family: 'Playfair Display', Georgia, serif;
 }
+
 .font-script {
   font-family: 'Great Vibes', cursive;
 }
@@ -78,12 +94,14 @@ dialog::backdrop {
 /* Gold Gradient Text */
 .text-gold-gradient {
   background: linear-gradient(135deg, #D4AF37 0%, #FFDF73 50%, #B8860B 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-maroon-gradient {
   background: linear-gradient(135deg, #6D1427 0%, #4A0E1B 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -137,12 +155,14 @@ dialog::backdrop {
   border-color: #D4AF37;
   pointer-events: none;
 }
+
 .corner-flourish::before {
   top: 6px;
   left: 6px;
   border-top: 2px solid #D4AF37;
   border-left: 2px solid #D4AF37;
 }
+
 .corner-flourish::after {
   bottom: 6px;
   right: 6px;
@@ -184,3 +204,158 @@ dialog::backdrop {
   box-shadow: 0 6px 20px rgba(74, 14, 27, 0.45);
   transform: translateY(-1px);
 }
+
+/* ===================================================
+   HIGH-END ROYAL ANIMATION ENGINE & LUXURY UTILITIES
+   =================================================== */
+
+/* 3D Perspective Context */
+.perspective-1200 {
+  perspective: 1200px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* Animated Liquid Gold Text Sheen */
+.text-gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    #D4AF37 0%,
+    #FFF8E7 25%,
+    #FFDF73 50%,
+    #D4AF37 75%,
+    #B8860B 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: goldSheen 6s linear infinite;
+}
+
+@keyframes goldSheen {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Pulsing Golden Aura */
+.aura-pulse {
+  animation: auraPulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes auraPulse {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(1.08);
+    opacity: 0.7;
+  }
+}
+
+/* Floating Levitation */
+.animate-float-gentle {
+  animation: floatGentle 5s ease-in-out infinite;
+}
+
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(0.8deg);
+  }
+}
+
+/* Celestial Orbiting Rings for Royal Portraits */
+.animate-orbit-cw {
+  animation: orbitClockwise 30s linear infinite;
+}
+
+.animate-orbit-ccw {
+  animation: orbitCounterClockwise 45s linear infinite;
+}
+
+@keyframes orbitClockwise {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orbitCounterClockwise {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+/* Authentic Royal Wax Seal */
+.wax-seal {
+  background: radial-gradient(circle at 35% 35%, #881b32 0%, #4A0E1B 60%, #350812 100%);
+  border: 3px solid #D4AF37;
+  box-shadow: 
+    0 10px 25px rgba(74, 14, 27, 0.5),
+    0 0 15px rgba(212, 175, 55, 0.4),
+    inset 0 3px 6px rgba(255, 255, 255, 0.3),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.5);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.wax-seal:hover {
+  transform: scale(1.05) rotate(2deg);
+  box-shadow: 
+    0 15px 35px rgba(74, 14, 27, 0.65),
+    0 0 25px rgba(212, 175, 55, 0.7),
+    inset 0 3px 6px rgba(255, 255, 255, 0.4),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* Audio Visualizer Dancing Equalizer Bars */
+.eq-bar-1 { animation: danceEqualizer 1.2s ease-in-out infinite alternate; }
+.eq-bar-2 { animation: danceEqualizer 0.8s ease-in-out infinite alternate 0.2s; }
+.eq-bar-3 { animation: danceEqualizer 1.4s ease-in-out infinite alternate 0.4s; }
+.eq-bar-4 { animation: danceEqualizer 1.0s ease-in-out infinite alternate 0.1s; }
+
+@keyframes danceEqualizer {
+  0% {
+    height: 4px;
+  }
+  100% {
+    height: 18px;
+  }
+}
+
+/* Elegant Flip Digit Shadow Card */
+.digit-card {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFFDF9 50%, #F5EEDB 51%, #FFFFFF 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.digit-card::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(212, 175, 55, 0.35);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}

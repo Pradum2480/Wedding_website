@@ -11,6 +11,9 @@ import { RSVPSection } from '../components/public/RSVPSection';
 import { VenueMapSection } from '../components/public/VenueMapSection';
 import { WhatsAppShare } from '../components/public/WhatsAppShare';
 import { BackgroundMusicPlayer } from '../components/public/BackgroundMusicPlayer';
+import { FloatingPetals } from '../components/common/FloatingPetals';
+import { RoyalScrollProgress } from '../components/common/RoyalScrollProgress';
+import { ScrollParallaxDecorations } from '../components/common/ScrollParallaxDecorations';
 import { Footer } from '../components/public/Footer';
 
 export const PublicWebsite: React.FC = () => {
@@ -28,18 +31,27 @@ export const PublicWebsite: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-ivory text-dark-text selection:bg-gold-light selection:text-maroon">
+    <div className="relative min-h-screen bg-ivory text-dark-text selection:bg-gold-light selection:text-maroon overflow-x-hidden">
       
-      {/* Animated Invitation Cover */}
+      {/* 24K Royal Gold Scroll Progress Thread across the top */}
+      <RoyalScrollProgress />
+
+      {/* Multilayer Scroll Parallax Ambient Ornaments */}
+      <ScrollParallaxDecorations />
+
+      {/* 3D Wax Seal Unfolding Invitation Cover */}
       {showCover && (
         <InvitationCover onOpen={handleOpenInvitation} />
       )}
 
-      {/* Floating Audio Player */}
+      {/* Floating Rose Petals & Golden Stardust Particle Engine */}
+      <FloatingPetals />
+
+      {/* Floating Vinyl Audio Player with Dancing Equalizer */}
       <BackgroundMusicPlayer />
 
       {/* Main Wedding Content */}
-      <main className="relative">
+      <main className="relative z-10">
         <HeroSection onReplayCover={handleReplayCover} />
         <CountdownTimer />
         <CoupleSection />

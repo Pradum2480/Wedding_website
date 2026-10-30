@@ -187,7 +187,7 @@ export const AdminSettings: React.FC = () => {
             </label>
 
             <label className="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 hover:bg-cream/30 cursor-pointer">
-              <span className="text-xs font-semibold text-gray-800">Pre-Wedding Photo Gallery</span>
+              <span className="text-xs font-semibold text-gray-800">Couple Photo Gallery</span>
               <input
                 type="checkbox"
                 checked={siteForm.show_main_gallery}

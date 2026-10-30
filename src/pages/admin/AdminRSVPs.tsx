@@ -12,12 +12,16 @@ import {
   Phone, 
   Calendar,
   Filter,
-  RefreshCw
+  RefreshCw,
+  AlertCircle,
+  Database
 } from 'lucide-react';
 
 export const AdminRSVPs: React.FC = () => {
   const [rsvps, setRsvps] = useState<WeddingRSVP[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<'supabase' | 'local'>('local');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'attending' | 'declined'>('all');
 
@@ -25,6 +29,8 @@ export const AdminRSVPs: React.FC = () => {
     setLoading(true);
     const res = await fetchRSVPsAdmin();
     setRsvps(res.data);
+    setDbError(res.error || null);
+    setDataSource(res.source === 'supabase' ? 'supabase' : 'local');
     setLoading(false);
   };
 
@@ -69,10 +75,16 @@ export const AdminRSVPs: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-couple text-2xl sm:text-3xl font-bold text-maroon">
-            RSVP Responses &amp; Guest Registry
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-500 font-heading">
+          <div className="flex items-center space-x-2.5">
+            <h1 className="font-couple text-2xl sm:text-3xl font-bold text-maroon">
+              RSVP Responses &amp; Guest Registry
+            </h1>
+            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border inline-flex items-center space-x-1 ${dataSource === 'supabase' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+              <Database className="w-3 h-3" />
+              <span>{dataSource === 'supabase' ? 'Database Live' : 'Local Registry'}</span>
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-gray-500 font-heading mt-1">
             Review attendee counts, personal blessings, phone numbers, and download CSV report.
           </p>
         </div>
@@ -83,7 +95,7 @@ export const AdminRSVPs: React.FC = () => {
             className="p-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-colors cursor-pointer"
             title="Refresh Registry"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
           <button
@@ -96,6 +108,21 @@ export const AdminRSVPs: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Database Warning/Notice if Supabase query failed */}
+      {dbError && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start space-x-3 shadow-sm">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-amber-800">
+              Supabase Query Notice ({dbError})
+            </p>
+            <p className="mt-1 text-amber-700 leading-relaxed">
+              Showing locally saved and cached RSVPs. If Row Level Security (RLS) is active on your Supabase database, run the SQL script in <code className="bg-amber-100 font-mono px-1 py-0.5 rounded text-amber-900">supabase/storage_and_permissions_fix.sql</code> to grant permission for reading RSVP responses.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Summary Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

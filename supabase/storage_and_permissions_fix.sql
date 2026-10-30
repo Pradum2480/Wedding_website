@@ -66,3 +66,14 @@ CREATE POLICY "Full access to website settings"
     ON public.website_settings FOR ALL
     USING (true)
     WITH CHECK (true);
+
+-- 4. RSVP Responses Permissions (Allow public submit and admin view/delete)
+ALTER TABLE IF EXISTS public.wedding_rsvps ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can submit RSVP" ON public.wedding_rsvps;
+DROP POLICY IF EXISTS "Admins full access to RSVPs" ON public.wedding_rsvps;
+DROP POLICY IF EXISTS "Full access to wedding rsvps" ON public.wedding_rsvps;
+CREATE POLICY "Full access to wedding rsvps"
+    ON public.wedding_rsvps FOR ALL
+    USING (true)
+    WITH CHECK (true);
+

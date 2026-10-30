@@ -103,7 +103,7 @@ export const AdminGallery: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-couple text-2xl sm:text-3xl font-bold text-maroon">
-            Pre-Wedding &amp; Couple Gallery
+            Couple Photo Gallery
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 font-heading">
             Upload high-resolution couple photographs, assign captions, and select cover pictures.

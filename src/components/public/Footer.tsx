@@ -22,7 +22,7 @@ export const Footer: React.FC<FooterProps> = ({ onReplayCover }) => {
           </span>
         </div>
 
-        <h3 className="font-couple text-2xl sm:text-3xl font-bold text-gold tracking-tight mb-2">
+        <h3 className="font-couple text-2xl sm:text-3xl font-bold text-gold tracking-tight mb-2 break-words">
           {settings.groom_name} &amp; {settings.bride_name}
         </h3>
 
@@ -31,7 +31,7 @@ export const Footer: React.FC<FooterProps> = ({ onReplayCover }) => {
         </p>
 
         {settings.footer_message && (
-          <p className="font-heading text-sm sm:text-base text-cream/90 max-w-lg mx-auto italic mb-6">
+          <p className="font-heading text-sm sm:text-base text-cream/90 max-w-lg mx-auto italic mb-6 break-words">
             "{settings.footer_message}"
           </p>
         )}
