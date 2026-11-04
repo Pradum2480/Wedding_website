@@ -35,7 +35,7 @@ Designed with a **Royal Gold & Maroon** palace theme, featuring an animated enve
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Lucide React, Canvas Confetti
 - **Backend & Database**: Supabase PostgreSQL, Supabase Auth, Supabase Storage
 - **Security**: PostgreSQL Row Level Security (RLS) policies protecting private guest information
-- **Hosting Compatibility**: Vercel Free, Cloudflare Pages (with `vercel.json` and `_redirects` included)
+- **Hosting Compatibility**: Vercel Free, Cloudflare Workers / Pages (with `vercel.json` and native Cloudflare SPA fallback)
 
 ---
 

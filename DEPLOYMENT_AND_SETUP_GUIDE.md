@@ -94,7 +94,7 @@ The application includes an **offline-first cached demo mode**. You can start ex
    - Build output directory: `dist`
 4. Add the environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 5. Click **Save and Deploy**.
-6. The included `public/_redirects` ensures seamless SPA routing.
+6. Cloudflare handles SPA routing natively without requiring a `_redirects` file (via Workers Static Assets `not_found_handling: "single-page-application"` or Pages default SPA fallback).
 
 ---
 
