@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { WeddingProvider } from './context/WeddingContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { PublicWebsite } from './pages/PublicWebsite';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -18,7 +19,8 @@ export const App: React.FC = () => {
     <BrowserRouter>
       <AuthProvider>
         <WeddingProvider>
-          <Routes>
+          <NotificationProvider>
+            <Routes>
             {/* Public Invitation Website */}
             <Route path="/" element={<PublicWebsite />} />
 
@@ -86,9 +88,10 @@ export const App: React.FC = () => {
             {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </WeddingProvider>
-      </AuthProvider>
-    </BrowserRouter>
+        </NotificationProvider>
+      </WeddingProvider>
+    </AuthProvider>
+  </BrowserRouter>
   );
 };
 

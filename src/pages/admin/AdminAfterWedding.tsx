@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useWedding } from '../../context/WeddingContext';
+import { useNotification } from '../../context/NotificationContext';
 import { 
   saveWeddingAlbum, 
   deleteWeddingAlbum, 
   saveWeddingPhoto, 
   deleteWeddingPhoto, 
-  uploadMediaFile 
+  uploadMediaFile,
+  validateMediaFile 
 } from '../../services/weddingService';
 import { WeddingAlbum, WeddingPhoto } from '../../types/wedding';
 import { 
@@ -14,45 +16,56 @@ import {
   Upload, 
   Trash2, 
   Edit3, 
-  Eye, 
-  EyeOff, 
-  Calendar, 
   Images, 
   X, 
   Save, 
-  CheckCircle2, 
   AlertCircle 
 } from 'lucide-react';
 
 export const AdminAfterWedding: React.FC = () => {
   const { albums, photos, refreshData } = useWedding();
+  const { showSuccess, showError } = useNotification();
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>(albums[0]?.id || '');
   const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState<Partial<WeddingAlbum> | null>(null);
+  const [orderInput, setOrderInput] = useState<string>('1');
   const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [modalError, setModalError] = useState<string | null>(null);
 
-  // Photos belonging to after_wedding and the selected album
+  // Synchronize selectedAlbumId when albums list loads or changes
+  React.useEffect(() => {
+    if (albums.length > 0 && (!selectedAlbumId || !albums.some(a => a.id === selectedAlbumId))) {
+      setSelectedAlbumId(albums[0].id);
+    }
+  }, [albums, selectedAlbumId]);
+
+  // Photos belonging to after_wedding and the selected album (including unassigned in first album)
   const currentAlbumPhotos = photos.filter(p => 
     p.category === 'after_wedding' && 
-    (selectedAlbumId ? p.album_id === selectedAlbumId : true)
+    (selectedAlbumId ? (p.album_id === selectedAlbumId || (!p.album_id && selectedAlbumId === albums[0]?.id)) : true)
   );
 
   const selectedAlbum = albums.find(a => a.id === selectedAlbumId);
 
   const handleOpenAddAlbum = () => {
+    const nextOrder = albums.length + 1;
     setEditingAlbum({
       title: '',
       description: '',
       cover_photo_url: '',
-      display_order: albums.length + 1,
+      display_order: nextOrder,
       is_published: true
     });
+    setOrderInput(String(nextOrder));
+    setModalError(null);
     setIsAlbumModalOpen(true);
   };
 
   const handleOpenEditAlbum = (album: WeddingAlbum) => {
     setEditingAlbum({ ...album });
+    setOrderInput(String(album.display_order ?? 1));
+    setModalError(null);
     setIsAlbumModalOpen(true);
   };
 
@@ -60,57 +73,108 @@ export const AdminAfterWedding: React.FC = () => {
     if (!window.confirm(`Are you sure you want to delete album "${title}" and all its photos?`)) return;
     const res = await deleteWeddingAlbum(id);
     if (res.success) {
-      setMessage({ text: 'Album removed successfully.', type: 'success' });
       await refreshData();
       if (selectedAlbumId === id) {
         setSelectedAlbumId(albums[0]?.id || '');
       }
-      setTimeout(() => setMessage(null), 3000);
+      showSuccess(`Album "${title}" removed successfully.`);
+    } else {
+      showError(res.error || 'Failed to remove album.');
     }
   };
 
   const handleSaveAlbum = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingAlbum?.title) return;
-    const res = await saveWeddingAlbum(editingAlbum);
+    setModalError(null);
+
+    if (!editingAlbum?.title?.trim()) {
+      setModalError('Album Title is required.');
+      return;
+    }
+
+    const cleanOrder = Math.max(1, Math.min(albums.length + (editingAlbum.id ? 0 : 1), Math.floor(Number(orderInput) || 1)));
+
+    const res = await saveWeddingAlbum({
+      ...editingAlbum,
+      title: editingAlbum.title.trim(),
+      display_order: cleanOrder
+    });
+
     if (res.success) {
+      // Automatic dialog closing on success
       setIsAlbumModalOpen(false);
-      setMessage({ text: 'Album saved successfully!', type: 'success' });
+      setEditingAlbum(null);
+      setModalError(null);
       await refreshData();
       if (res.data?.id) setSelectedAlbumId(res.data.id);
-      setTimeout(() => setMessage(null), 3000);
+      showSuccess(
+        editingAlbum.id ? 'Album updated successfully!' : 'Album created successfully!',
+        'Album Saved'
+      );
+    } else {
+      // Keep dialog open on failure
+      setModalError(res.error || 'Failed to save album.');
     }
   };
 
   const handleUploadPhotosToAlbum = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !selectedAlbumId) return;
+    const rawFiles = e.target.files;
+    if (!rawFiles || rawFiles.length === 0) return;
+    const files = Array.from(rawFiles);
+    e.target.value = '';
+
+    const targetAlbumId = selectedAlbumId || albums[0]?.id;
+    if (!targetAlbumId) {
+      showError('Please select or create an album before uploading photographs.');
+      return;
+    }
 
     setUploading(true);
     let count = 0;
+    const errors: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      setUploadProgress(`Uploading ${i + 1} of ${files.length}: ${file.name}...`);
+
+      const validation = validateMediaFile(file, 'image');
+      if (!validation.isValid) {
+        errors.push(`${file.name}: ${validation.error}`);
+        continue;
+      }
+
       const res = await uploadMediaFile(file, 'after_wedding');
       if (res.success && res.url) {
-        await saveWeddingPhoto({
-          album_id: selectedAlbumId,
+        const saveRes = await saveWeddingPhoto({
+          album_id: targetAlbumId,
           category: 'after_wedding',
           photo_url: res.url,
           caption: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
           photo_date: new Date().toISOString().split('T')[0],
-          display_order: currentAlbumPhotos.length + i + 1,
+          display_order: currentAlbumPhotos.length + count + 1,
           is_published: true,
           is_cover: false
         });
-        count++;
+        if (saveRes.success) {
+          count++;
+        } else {
+          errors.push(`${file.name}: ${saveRes.error || 'Failed to save record'}`);
+        }
+      } else {
+        errors.push(`${file.name}: ${res.error || 'Upload failed'}`);
       }
     }
 
     await refreshData();
     setUploading(false);
-    setMessage({ text: `Uploaded ${count} photographs to album!`, type: 'success' });
-    setTimeout(() => setMessage(null), 4000);
+    setUploadProgress('');
+
+    if (count > 0) {
+      showSuccess(`Uploaded ${count} photograph${count > 1 ? 's' : ''} to "${selectedAlbum?.title || 'album'}"!`, 'Photos Added');
+    }
+    if (errors.length > 0) {
+      showError(`${errors.length} file(s) failed: ${errors[0]}`);
+    }
   };
 
   const handleDeletePhoto = async (id: string) => {
@@ -118,8 +182,9 @@ export const AdminAfterWedding: React.FC = () => {
     const res = await deleteWeddingPhoto(id);
     if (res.success) {
       await refreshData();
-      setMessage({ text: 'Photo removed.', type: 'success' });
-      setTimeout(() => setMessage(null), 3000);
+      showSuccess('Photograph removed from album.');
+    } else {
+      showError(res.error || 'Failed to remove photograph.');
     }
   };
 
@@ -145,15 +210,6 @@ export const AdminAfterWedding: React.FC = () => {
           <span>Create New Album</span>
         </button>
       </div>
-
-      {message && (
-        <div className={`p-4 rounded-xl text-sm flex items-center space-x-2 ${
-          message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
-        }`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
-          <span>{message.text}</span>
-        </div>
-      )}
 
       {/* Album Selector Tabs */}
       <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-wrap items-center gap-2">
@@ -207,11 +263,11 @@ export const AdminAfterWedding: React.FC = () => {
           <div>
             <label className="btn-royal-maroon px-4 py-2 rounded-xl text-xs font-semibold inline-flex items-center space-x-2 shadow cursor-pointer">
               <Upload className="w-3.5 h-3.5 text-gold" />
-              <span>{uploading ? 'Uploading...' : 'Upload Photos to Album'}</span>
+              <span>{uploading ? (uploadProgress || 'Uploading...') : 'Upload Photos to Album'}</span>
               <input
                 type="file"
                 multiple
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 className="hidden"
                 disabled={uploading}
                 onChange={handleUploadPhotosToAlbum}
@@ -289,6 +345,19 @@ export const AdminAfterWedding: React.FC = () => {
               </button>
             </div>
 
+            {modalError && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center justify-between">
+                <span>{modalError}</span>
+                <button
+                  type="button"
+                  onClick={() => setModalError(null)}
+                  className="text-red-500 hover:text-red-700 ml-2 font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             <form onSubmit={handleSaveAlbum} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -336,9 +405,17 @@ export const AdminAfterWedding: React.FC = () => {
                   <input
                     type="number"
                     min="1"
-                    value={editingAlbum.display_order || 1}
-                    onChange={(e) => setEditingAlbum({ ...editingAlbum, display_order: Number(e.target.value) })}
-                    className="w-16 px-2 py-1 text-xs border rounded-lg"
+                    value={orderInput}
+                    onChange={(e) => setOrderInput(e.target.value)}
+                    onBlur={() => {
+                      const parsed = parseInt(orderInput, 10);
+                      if (isNaN(parsed) || parsed < 1) {
+                        setOrderInput('1');
+                      } else {
+                        setOrderInput(parsed.toString());
+                      }
+                    }}
+                    className="w-16 px-2 py-1 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-gold"
                   />
                 </div>
               </div>

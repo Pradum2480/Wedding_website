@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchRSVPsAdmin, deleteRSVP, exportRSVPsToCSV } from '../../services/weddingService';
+import { useNotification } from '../../context/NotificationContext';
 import { WeddingRSVP } from '../../types/wedding';
 import { 
   Users, 
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 
 export const AdminRSVPs: React.FC = () => {
+  const { showSuccess, showError } = useNotification();
   const [rsvps, setRsvps] = useState<WeddingRSVP[]>([]);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
@@ -43,11 +45,15 @@ export const AdminRSVPs: React.FC = () => {
     const res = await deleteRSVP(id);
     if (res.success) {
       setRsvps(prev => prev.filter(r => r.id !== id));
+      showSuccess(`RSVP for "${name}" removed successfully!`);
+    } else {
+      showError(res.error || 'Failed to delete RSVP');
     }
   };
 
   const handleExportCSV = () => {
     exportRSVPsToCSV(filteredRSVPs);
+    showSuccess(`Exported ${filteredRSVPs.length} RSVP records to CSV!`);
   };
 
   // Metrics

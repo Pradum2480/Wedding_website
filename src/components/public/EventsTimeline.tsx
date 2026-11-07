@@ -10,7 +10,9 @@ export const EventsTimeline: React.FC = () => {
 
   if (!websiteSettings.show_events_section) return null;
 
-  const publishedEvents = events.filter(e => e.is_published);
+  const publishedEvents = events
+    .filter(e => e.is_published)
+    .sort((a, b) => a.display_order - b.display_order);
 
   if (publishedEvents.length === 0) {
     return null;

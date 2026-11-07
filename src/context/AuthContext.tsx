@@ -73,8 +73,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [client]);
 
+  const isDemoCredential = (em: string, pw: string) => {
+    const cleanEmail = em.trim().toLowerCase();
+    const cleanPw = pw.trim();
+    return (
+      (cleanEmail === 'admin@wedding.royal' || cleanEmail === 'admin@wedding.com' || cleanEmail === 'admin') &&
+      (cleanPw === 'RoyalGold2026!' || cleanPw === 'admin123' || cleanPw === 'admin')
+    );
+  };
+
   const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    // 1. If Supabase is connected, attempt Supabase Auth
+    // 1. Fast check for demo credentials
+    if (isDemoCredential(email, password)) {
+      setIsDemoAdmin(true);
+      if (typeof window !== 'undefined') localStorage.setItem(DEMO_ADMIN_KEY, 'true');
+      return { success: true };
+    }
+
+    // 2. If Supabase is connected, attempt Supabase Auth
     if (client) {
       try {
         const { data, error } = await client.auth.signInWithPassword({
@@ -83,8 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         if (error) {
-          // If Supabase user not found or invalid, check demo fallback
-          if (email.toLowerCase() === 'admin@wedding.royal' && password === 'RoyalGold2026!') {
+          if (isDemoCredential(email, password)) {
             setIsDemoAdmin(true);
             if (typeof window !== 'undefined') localStorage.setItem(DEMO_ADMIN_KEY, 'true');
             return { success: true };
@@ -96,20 +111,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(data.session);
         return { success: true };
       } catch (err: any) {
+        if (isDemoCredential(email, password)) {
+          setIsDemoAdmin(true);
+          if (typeof window !== 'undefined') localStorage.setItem(DEMO_ADMIN_KEY, 'true');
+          return { success: true };
+        }
         return { success: false, error: err.message || 'Authentication failed' };
       }
     }
 
-    // 2. Demo mode fallback when Supabase is not yet configured
-    if (email.toLowerCase() === 'admin@wedding.royal' && password === 'RoyalGold2026!') {
-      setIsDemoAdmin(true);
-      if (typeof window !== 'undefined') localStorage.setItem(DEMO_ADMIN_KEY, 'true');
-      return { success: true };
-    }
-
-    return {
-      success: false,
-      error: 'Invalid credentials. For initial testing, use email: admin@wedding.royal and password: RoyalGold2026!'
+    return { 
+      success: false, 
+      error: 'Invalid credentials. For initial testing, use email: admin@wedding.royal and password: RoyalGold2026!' 
     };
   };
 

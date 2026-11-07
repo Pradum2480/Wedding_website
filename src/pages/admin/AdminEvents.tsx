@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWedding } from '../../context/WeddingContext';
-import { saveWeddingEvent, deleteWeddingEvent, uploadMediaFile } from '../../services/weddingService';
+import { useNotification } from '../../context/NotificationContext';
+import { saveWeddingEvent, deleteWeddingEvent, uploadMediaFile, validateMediaFile } from '../../services/weddingService';
 import { WeddingEvent } from '../../types/wedding';
 import { 
   Calendar, 
@@ -12,7 +13,6 @@ import {
   Clock, 
   MapPin, 
   Upload, 
-  CheckCircle2, 
   AlertCircle,
   X,
   Save
@@ -20,13 +20,16 @@ import {
 
 export const AdminEvents: React.FC = () => {
   const { events, refreshData } = useWedding();
+  const { showSuccess, showError } = useNotification();
   const [editingEvent, setEditingEvent] = useState<Partial<WeddingEvent> | null>(null);
+  const [orderInput, setOrderInput] = useState<string>('1');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const handleOpenAdd = () => {
+    const nextOrder = events.length + 1;
     setEditingEvent({
       event_name: '',
       description: '',
@@ -38,14 +41,18 @@ export const AdminEvents: React.FC = () => {
       full_address: '',
       google_maps_url: '',
       cover_photo_url: '',
-      display_order: events.length + 1,
+      display_order: nextOrder,
       is_published: true
     });
+    setOrderInput(String(nextOrder));
+    setModalError(null);
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (event: WeddingEvent) => {
     setEditingEvent({ ...event });
+    setOrderInput(String(event.display_order ?? 1));
+    setModalError(null);
     setIsModalOpen(true);
   };
 
@@ -53,52 +60,96 @@ export const AdminEvents: React.FC = () => {
     if (!window.confirm(`Are you sure you want to delete event "${name}"?`)) return;
     const res = await deleteWeddingEvent(id);
     if (res.success) {
-      setMessage({ text: 'Event deleted successfully.', type: 'success' });
       await refreshData();
-      setTimeout(() => setMessage(null), 3000);
+      showSuccess(`Ceremony "${name}" deleted successfully.`);
     } else {
-      setMessage({ text: res.error || 'Failed to delete event.', type: 'error' });
+      showError(res.error || 'Failed to delete event.');
     }
   };
 
   const handleTogglePublish = async (event: WeddingEvent) => {
+    const newStatus = !event.is_published;
     const res = await saveWeddingEvent({
       id: event.id,
-      is_published: !event.is_published
+      is_published: newStatus
     });
     if (res.success) {
       await refreshData();
+      showSuccess(newStatus ? `"${event.event_name}" is now live on the website!` : `"${event.event_name}" hidden from the website.`);
+    } else {
+      showError('Failed to change publish status.');
     }
   };
 
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editingEvent) return;
+
+    // Reset input value so selecting the same file triggers change again if needed
+    e.target.value = '';
+
+    // Validate format & size
+    const validation = validateMediaFile(file, 'image');
+    if (!validation.isValid) {
+      setModalError(validation.error || 'Invalid image file.');
+      return;
+    }
+
+    setModalError(null);
     setUploadingCover(true);
+
+    // Instant local preview
+    try {
+      const previewUrl = URL.createObjectURL(file);
+      setEditingEvent(prev => prev ? ({ ...prev, cover_photo_url: previewUrl }) : null);
+    } catch {
+      // Ignore preview generation error
+    }
+
     const res = await uploadMediaFile(file, 'events');
     if (res.success && res.url) {
-      setEditingEvent(prev => ({ ...prev, cover_photo_url: res.url }));
+      setEditingEvent(prev => prev ? ({ ...prev, cover_photo_url: res.url }) : null);
+      showSuccess('Cover image uploaded successfully!');
     } else {
-      alert(res.error || 'Upload failed');
+      setModalError(res.error || 'Cover image upload failed.');
     }
     setUploadingCover(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingEvent?.event_name || !editingEvent?.venue_name || !editingEvent?.event_date) {
-      alert('Event Name, Date, and Venue are required.');
+    setModalError(null);
+
+    if (!editingEvent?.event_name?.trim() || !editingEvent?.venue_name?.trim() || !editingEvent?.event_date) {
+      setModalError('Event Name, Date, and Venue Name are required.');
       return;
     }
+
+    // Safely parse order input without string concatenation or out-of-bounds numbers
+    const parsedOrder = Math.max(1, Math.min(events.length + (editingEvent.id ? 0 : 1), Math.floor(Number(orderInput) || 1)));
+
     setIsSaving(true);
-    const res = await saveWeddingEvent(editingEvent);
+    const res = await saveWeddingEvent({
+      ...editingEvent,
+      event_name: editingEvent.event_name.trim(),
+      venue_name: editingEvent.venue_name.trim(),
+      full_address: editingEvent.full_address?.trim() || '',
+      display_order: parsedOrder
+    });
+
     if (res.success) {
+      // Automatic Dialog Closing on successful update
       setIsModalOpen(false);
-      setMessage({ text: 'Event saved successfully!', type: 'success' });
+      setEditingEvent(null);
+      setModalError(null);
       await refreshData();
-      setTimeout(() => setMessage(null), 3000);
+      showSuccess(
+        editingEvent.id ? 'Event updated successfully!' : 'Event created successfully!',
+        'Ceremony Saved'
+      );
     } else {
-      alert(res.error || 'Save failed');
+      // Keep dialog open and display error on failure
+      setModalError(res.error || 'Failed to save ceremony details. Please check your data and retry.');
     }
     setIsSaving(false);
   };
@@ -125,15 +176,6 @@ export const AdminEvents: React.FC = () => {
           <span>Add New Ceremony / Event</span>
         </button>
       </div>
-
-      {message && (
-        <div className={`p-4 rounded-xl text-sm flex items-center space-x-2 ${
-          message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
-        }`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
-          <span>{message.text}</span>
-        </div>
-      )}
 
       {/* Events List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -233,6 +275,13 @@ export const AdminEvents: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {modalError && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSave} className="space-y-4">
               <div>
@@ -385,9 +434,15 @@ export const AdminEvents: React.FC = () => {
                   <input
                     type="number"
                     min="1"
-                    value={editingEvent.display_order || 1}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, display_order: Number(e.target.value) })}
-                    className="w-16 px-2 py-1 text-xs border rounded-lg"
+                    max={events.length + (editingEvent.id ? 0 : 1)}
+                    value={orderInput}
+                    onChange={(e) => setOrderInput(e.target.value)}
+                    onBlur={() => {
+                      if (!orderInput.trim() || isNaN(Number(orderInput)) || Number(orderInput) < 1) {
+                        setOrderInput('1');
+                      }
+                    }}
+                    className="w-16 px-2 py-1 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-gold"
                   />
                 </div>
               </div>

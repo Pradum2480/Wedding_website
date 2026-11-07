@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWedding } from '../../context/WeddingContext';
-import { saveWeddingPhoto, deleteWeddingPhoto, uploadMediaFile } from '../../services/weddingService';
+import { useNotification } from '../../context/NotificationContext';
+import { saveWeddingPhoto, deleteWeddingPhoto, uploadMediaFile, validateMediaFile } from '../../services/weddingService';
 import { WeddingPhoto } from '../../types/wedding';
 import { 
   Images, 
@@ -9,9 +10,7 @@ import {
   Eye, 
   EyeOff, 
   Star, 
-  CheckCircle2, 
   AlertCircle, 
-  Plus, 
   Edit3,
   X,
   Save
@@ -19,40 +18,68 @@ import {
 
 export const AdminGallery: React.FC = () => {
   const { photos, refreshData } = useWedding();
+  const { showSuccess, showError } = useNotification();
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
   const [editingPhoto, setEditingPhoto] = useState<Partial<WeddingPhoto> | null>(null);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [orderInput, setOrderInput] = useState<string>('1');
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // Gallery and couple photos
   const galleryPhotos = photos.filter(p => p.category !== 'after_wedding');
 
   const handleMultipleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const rawFiles = e.target.files;
+    if (!rawFiles || rawFiles.length === 0) return;
+    // Crucial: Copy file objects into array before clearing DOM input value
+    const files = Array.from(rawFiles);
+    e.target.value = '';
 
     setUploading(true);
     let successCount = 0;
+    const errors: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      setUploadProgress(`Uploading ${i + 1} of ${files.length}: ${file.name}...`);
+
+      // Validate each image
+      const validation = validateMediaFile(file, 'image');
+      if (!validation.isValid) {
+        errors.push(`${file.name}: ${validation.error}`);
+        continue;
+      }
+
       const res = await uploadMediaFile(file, 'gallery');
       if (res.success && res.url) {
-        await saveWeddingPhoto({
+        const saveRes = await saveWeddingPhoto({
           category: 'gallery',
           photo_url: res.url,
           caption: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
-          display_order: galleryPhotos.length + i + 1,
+          display_order: galleryPhotos.length + successCount + 1,
           is_published: true,
           is_cover: false
         });
-        successCount++;
+        if (saveRes.success) {
+          successCount++;
+        } else {
+          errors.push(`${file.name}: ${saveRes.error || 'Failed to save to database'}`);
+        }
+      } else {
+        errors.push(`${file.name}: ${res.error || 'Upload failed'}`);
       }
     }
 
     await refreshData();
     setUploading(false);
-    setMessage({ text: `Successfully uploaded ${successCount} photograph(s)!`, type: 'success' });
-    setTimeout(() => setMessage(null), 4000);
+    setUploadProgress('');
+
+    if (successCount > 0) {
+      showSuccess(`Successfully uploaded ${successCount} photograph${successCount > 1 ? 's' : ''}!`, 'Gallery Updated');
+    }
+    if (errors.length > 0) {
+      showError(`${errors.length} file(s) failed: ${errors[0]}`);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -60,17 +87,20 @@ export const AdminGallery: React.FC = () => {
     const res = await deleteWeddingPhoto(id);
     if (res.success) {
       await refreshData();
-      setMessage({ text: 'Photograph removed.', type: 'success' });
-      setTimeout(() => setMessage(null), 3000);
+      showSuccess('Photograph removed from gallery.');
+    } else {
+      showError(res.error || 'Failed to remove photograph.');
     }
   };
 
   const handleTogglePublish = async (photo: WeddingPhoto) => {
+    const newStatus = !photo.is_published;
     await saveWeddingPhoto({
       id: photo.id,
-      is_published: !photo.is_published
+      is_published: newStatus
     });
     await refreshData();
+    showSuccess(newStatus ? 'Photo published to public gallery.' : 'Photo hidden from gallery.');
   };
 
   const handleSetCover = async (photo: WeddingPhoto) => {
@@ -82,17 +112,36 @@ export const AdminGallery: React.FC = () => {
     }
     await saveWeddingPhoto({ id: photo.id, is_cover: true });
     await refreshData();
-    setMessage({ text: 'Cover photograph updated.', type: 'success' });
-    setTimeout(() => setMessage(null), 3000);
+    showSuccess('Cover photograph updated successfully!', 'Cover Set');
+  };
+
+  const handleOpenEdit = (photo: WeddingPhoto) => {
+    setEditingPhoto({ ...photo });
+    setOrderInput(String(photo.display_order ?? 1));
+    setModalError(null);
   };
 
   const handleSaveDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPhoto) return;
-    const res = await saveWeddingPhoto(editingPhoto);
+    setModalError(null);
+
+    const cleanOrder = Math.max(1, Math.min(galleryPhotos.length, Math.floor(Number(orderInput) || 1)));
+
+    const res = await saveWeddingPhoto({
+      ...editingPhoto,
+      display_order: cleanOrder
+    });
+
     if (res.success) {
+      // Automatic dialog closing on success
       setEditingPhoto(null);
+      setModalError(null);
       await refreshData();
+      showSuccess('Photograph details updated successfully!', 'Changes Saved');
+    } else {
+      // Keep dialog open on failure
+      setModalError(res.error || 'Failed to save photo details.');
     }
   };
 
@@ -113,7 +162,7 @@ export const AdminGallery: React.FC = () => {
         <div>
           <label className="btn-royal-maroon px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold inline-flex items-center space-x-2 shadow-sm cursor-pointer">
             <Upload className="w-4 h-4 text-gold" />
-            <span>{uploading ? 'Compressing & Uploading...' : 'Upload Photos'}</span>
+            <span>{uploading ? (uploadProgress || 'Compressing & Uploading...') : 'Upload Photos'}</span>
             <input
               type="file"
               multiple
@@ -125,15 +174,6 @@ export const AdminGallery: React.FC = () => {
           </label>
         </div>
       </div>
-
-      {message && (
-        <div className={`p-4 rounded-xl text-sm flex items-center space-x-2 ${
-          message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
-        }`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
-          <span>{message.text}</span>
-        </div>
-      )}
 
       {/* Photos Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -182,7 +222,7 @@ export const AdminGallery: React.FC = () => {
               </p>
               <div className="flex items-center justify-between text-[11px] text-gray-500 pt-2 border-t border-gray-100 mt-2">
                 <button
-                  onClick={() => setEditingPhoto({ ...photo })}
+                  onClick={() => handleOpenEdit(photo)}
                   className="hover:text-gold-deep flex items-center space-x-1 cursor-pointer"
                 >
                   <Edit3 className="w-3 h-3" />
@@ -229,6 +269,13 @@ export const AdminGallery: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {modalError && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSaveDetails} className="space-y-4">
               <div className="w-full h-40 rounded-xl overflow-hidden bg-gray-100 mb-3 border">
@@ -284,9 +331,15 @@ export const AdminGallery: React.FC = () => {
                   <input
                     type="number"
                     min="1"
-                    value={editingPhoto.display_order || 1}
-                    onChange={(e) => setEditingPhoto({ ...editingPhoto, display_order: Number(e.target.value) })}
-                    className="w-16 px-2 py-1 text-xs border rounded-lg"
+                    max={galleryPhotos.length}
+                    value={orderInput}
+                    onChange={(e) => setOrderInput(e.target.value)}
+                    onBlur={() => {
+                      if (!orderInput.trim() || isNaN(Number(orderInput)) || Number(orderInput) < 1) {
+                        setOrderInput('1');
+                      }
+                    }}
+                    className="w-16 px-2 py-1 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-gold"
                   />
                 </div>
               </div>

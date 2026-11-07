@@ -109,6 +109,21 @@ export const RSVPSection: React.FC = () => {
                   <div className="p-4 rounded-xl bg-cream/70 border border-gold/30 text-xs text-dark-muted">
                     Your response has been securely saved to the wedding registry.
                   </div>
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubmitted(false);
+                        setGuestName('');
+                        setPhoneNumber('');
+                        setMessage('');
+                        setAttendeesCount(1);
+                      }}
+                      className="text-xs font-semibold text-maroon hover:text-gold-deep underline cursor-pointer"
+                    >
+                      Submit another response
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">

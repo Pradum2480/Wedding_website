@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useWedding } from '../../context/WeddingContext';
+import { useNotification } from '../../context/NotificationContext';
 import { 
   updateWebsiteSettings, 
   updateWeddingSettings, 
@@ -29,6 +30,7 @@ import {
 
 export const AdminSettings: React.FC = () => {
   const { websiteSettings, settings, refreshData } = useWedding();
+  const { showSuccess, showError } = useNotification();
   const [siteForm, setSiteForm] = useState({ ...websiteSettings });
   const [musicForm, setMusicForm] = useState({
     music_url: settings.music_url || '',
@@ -64,9 +66,12 @@ export const AdminSettings: React.FC = () => {
         music_title: file.name.replace(/\.[^/.]+$/, '')
       }));
       setMessage({ text: 'Audio file uploaded successfully!', type: 'success' });
+      showSuccess('Audio soundtrack uploaded successfully!');
       setTimeout(() => setMessage(null), 3000);
     } else {
-      setMessage({ text: res.error || 'Music upload failed', type: 'error' });
+      const errMsg = res.error || 'Music upload failed';
+      setMessage({ text: errMsg, type: 'error' });
+      showError(errMsg);
     }
     setUploadingMusic(false);
   };
@@ -88,9 +93,12 @@ export const AdminSettings: React.FC = () => {
 
       await refreshData();
       setMessage({ text: 'All appearance and music settings saved successfully!', type: 'success' });
+      showSuccess('Appearance and music settings saved successfully!');
       setTimeout(() => setMessage(null), 4000);
     } catch (err: any) {
-      setMessage({ text: err.message || 'Failed to save settings', type: 'error' });
+      const errMsg = err.message || 'Failed to save settings';
+      setMessage({ text: errMsg, type: 'error' });
+      showError(errMsg);
     } finally {
       setSavingSettings(false);
     }
@@ -107,6 +115,9 @@ export const AdminSettings: React.FC = () => {
       saveSupabaseConfig(supabaseUrl, supabaseKey);
       resetSupabaseClient();
       await refreshData();
+      showSuccess('Supabase database credentials saved and verified!');
+    } else {
+      showError(testRes.message || 'Supabase connection failed');
     }
     setTestingConnection(false);
   };
@@ -119,6 +130,7 @@ export const AdminSettings: React.FC = () => {
     setSupabaseKey(cfg.anonKey);
     setConnectionResult(null);
     refreshData();
+    showSuccess('Reset to environment variables successfully!');
   };
 
   return (

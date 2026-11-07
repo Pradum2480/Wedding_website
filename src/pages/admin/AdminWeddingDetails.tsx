@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWedding } from '../../context/WeddingContext';
-import { updateWeddingSettings, uploadMediaFile } from '../../services/weddingService';
+import { useNotification } from '../../context/NotificationContext';
+import { updateWeddingSettings, uploadMediaFile, validateMediaFile } from '../../services/weddingService';
 import { WeddingSettings } from '../../types/wedding';
 import { 
   Heart, 
@@ -10,8 +11,6 @@ import {
   MapPin, 
   Calendar, 
   Clock, 
-  CheckCircle2, 
-  AlertCircle, 
   User, 
   Sparkles,
   Info
@@ -19,12 +18,17 @@ import {
 
 export const AdminWeddingDetails: React.FC = () => {
   const { settings, refreshData } = useWedding();
+  const { showSuccess, showError } = useNotification();
   const [formData, setFormData] = useState<WeddingSettings>({ ...settings });
   const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadingGroom, setUploadingGroom] = useState(false);
   const [uploadingBride, setUploadingBride] = useState(false);
+
+  // Keep form data synchronized when settings are loaded/refreshed from database
+  React.useEffect(() => {
+    setFormData({ ...settings });
+  }, [settings]);
 
   const handleChange = (field: keyof WeddingSettings, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -34,15 +38,42 @@ export const AdminWeddingDetails: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Reset input value so selecting the same file triggers change again
+    e.target.value = '';
+
+    // Validate format & size (JPEG, PNG, WebP, <= 10MB)
+    const validation = validateMediaFile(file, 'image');
+    if (!validation.isValid) {
+      setErrorMessage(validation.error || 'Invalid image file.');
+      showError(validation.error || 'Invalid image file.');
+      return;
+    }
+
+    setErrorMessage('');
     if (target === 'groom') setUploadingGroom(true);
     if (target === 'bride') setUploadingBride(true);
 
+    // Instant local preview appears immediately upon selection
+    try {
+      const previewUrl = URL.createObjectURL(file);
+      if (target === 'groom') handleChange('groom_photo_url', previewUrl);
+      if (target === 'bride') handleChange('bride_photo_url', previewUrl);
+    } catch {}
+
     const res = await uploadMediaFile(file, 'couple');
     if (res.success && res.url) {
-      if (target === 'groom') handleChange('groom_photo_url', res.url);
-      if (target === 'bride') handleChange('bride_photo_url', res.url);
+      const field = target === 'groom' ? 'groom_photo_url' : 'bride_photo_url';
+      setFormData(prev => ({ ...prev, [field]: res.url! }));
+      // Persist directly to database and sync global state
+      await updateWeddingSettings({ [field]: res.url });
+      await refreshData();
+      showSuccess(
+        target === 'groom' ? "Groom profile photograph updated and saved!" : "Bride profile photograph updated and saved!",
+        "Photograph Saved"
+      );
     } else {
-      setErrorMessage(res.error || 'Photo upload failed');
+      setErrorMessage(res.error || 'Photo upload failed.');
+      showError(res.error || 'Photo upload failed.');
     }
 
     if (target === 'groom') setUploadingGroom(false);
@@ -52,28 +83,29 @@ export const AdminWeddingDetails: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    setSaveSuccess(false);
     setErrorMessage('');
 
     if (!formData.groom_name.trim() || !formData.bride_name.trim()) {
       setErrorMessage('Groom and Bride names are required.');
+      showError('Groom and Bride names are required.');
       setIsSaving(false);
       return;
     }
 
     if (!formData.wedding_date || !formData.venue_name.trim()) {
       setErrorMessage('Wedding Date and Venue Name are required.');
+      showError('Wedding Date and Venue Name are required.');
       setIsSaving(false);
       return;
     }
 
     const res = await updateWeddingSettings(formData);
     if (res.success) {
-      setSaveSuccess(true);
       await refreshData();
-      setTimeout(() => setSaveSuccess(false), 4000);
+      showSuccess('Wedding details updated successfully! Your public invitation has been updated.', 'Changes Saved');
     } else {
       setErrorMessage(res.error || 'Failed to save changes.');
+      showError(res.error || 'Failed to save changes.');
     }
 
     setIsSaving(false);
@@ -106,16 +138,8 @@ export const AdminWeddingDetails: React.FC = () => {
         </div>
       </div>
 
-      {saveSuccess && (
-        <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-800 text-sm flex items-center space-x-2">
-          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-          <span>Wedding details saved successfully! Your public invitation has been updated immediately.</span>
-        </div>
-      )}
-
       {errorMessage && (
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
@@ -153,7 +177,7 @@ export const AdminWeddingDetails: React.FC = () => {
                     <span>{uploadingGroom ? 'Uploading...' : 'Upload Photo'}</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       className="hidden"
                       onChange={(e) => handlePhotoUpload(e, 'groom')}
                     />
@@ -268,7 +292,7 @@ export const AdminWeddingDetails: React.FC = () => {
                     <span>{uploadingBride ? 'Uploading...' : 'Upload Photo'}</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       className="hidden"
                       onChange={(e) => handlePhotoUpload(e, 'bride')}
                     />

@@ -70,9 +70,9 @@ export const WeddingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const [settingsRes, eventsRes, albumsRes, photosRes, websiteRes] = await Promise.all([
         fetchWeddingSettings(),
-        fetchWeddingEvents(true),
-        fetchWeddingAlbums(true),
-        fetchWeddingPhotos(undefined, undefined, true),
+        fetchWeddingEvents(false),
+        fetchWeddingAlbums(false),
+        fetchWeddingPhotos(undefined, undefined, false),
         fetchWebsiteSettings()
       ]);
 
@@ -92,6 +92,25 @@ export const WeddingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   useEffect(() => {
     loadAllData();
+
+    // Automatically re-sync data when the user switches back to this tab
+    const handleFocus = () => {
+      loadAllData();
+    };
+
+    // Re-sync if data was updated in another tab
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key && e.key.startsWith('wedding_cached_')) {
+        loadAllData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, [loadAllData]);
 
   const toggleMusic = () => {

@@ -12,7 +12,9 @@ export const PhotoGallery: React.FC = () => {
 
   if (!websiteSettings.show_main_gallery) return null;
 
-  const publishedPhotos = photos.filter(p => p.is_published && p.category !== 'after_wedding');
+  const publishedPhotos = photos
+    .filter(p => p.is_published !== false && p.category !== 'after_wedding')
+    .sort((a, b) => (Number(a.display_order) || 999) - (Number(b.display_order) || 999));
 
   const openLightbox = (index: number) => {
     setSelectedPhotoIndex(index);

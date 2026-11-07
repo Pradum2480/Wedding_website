@@ -49,7 +49,7 @@ export const defaultWeddingSettings: WeddingSettings = {
 
 export const defaultEvents: WeddingEvent[] = [
   {
-    id: 'e1',
+    id: '00000000-0000-0000-0001-000000000001',
     event_name: 'Ganesh Sthapana & Mehendi',
     description: 'An auspicious commencement with sacred prayers seeking divine blessings, followed by vibrant henna designs, traditional Rajasthani folk music, and joyous dance.',
     event_date: addDays(43),
@@ -64,7 +64,7 @@ export const defaultEvents: WeddingEvent[] = [
     is_published: true
   },
   {
-    id: 'e2',
+    id: '00000000-0000-0000-0001-000000000002',
     event_name: 'Haldi Ceremony',
     description: 'A sun-drenched morning bathed in golden turmeric, yellow marigold petals, music, joyful laughter, and heartfelt blessings for the bride and groom.',
     event_date: addDays(44),
@@ -79,7 +79,7 @@ export const defaultEvents: WeddingEvent[] = [
     is_published: true
   },
   {
-    id: 'e3',
+    id: '00000000-0000-0000-0001-000000000003',
     event_name: 'Sangeet & Cocktail Night',
     description: 'An enchanting musical evening under chandeliers with choreographed family performances, cocktails, live band, and non-stop celebration on the royal dance floor.',
     event_date: addDays(44),
@@ -94,7 +94,7 @@ export const defaultEvents: WeddingEvent[] = [
     is_published: true
   },
   {
-    id: 'e4',
+    id: '00000000-0000-0000-0001-000000000004',
     event_name: 'Royal Wedding Ceremony (Pheras)',
     description: 'The sacred Vedic rites, traditional Baraat arrival, Varmala exchange under a canopy of royal flowers, and eternal vows around the sacred fire beneath the stars.',
     event_date: addDays(45),
@@ -109,7 +109,7 @@ export const defaultEvents: WeddingEvent[] = [
     is_published: true
   },
   {
-    id: 'e5',
+    id: '00000000-0000-0000-0001-000000000005',
     event_name: 'Grand Royal Reception',
     description: 'A grand banquet to celebrate the newly married couple. Savor royal culinary delights, celebratory champagne toasts, and heartfelt moments of companionship.',
     event_date: addDays(46),
@@ -157,7 +157,7 @@ export const defaultAlbums: WeddingAlbum[] = [
 
 export const defaultPhotos: WeddingPhoto[] = [
   {
-    id: 'p1',
+    id: '00000000-0000-0000-0002-000000000001',
     category: 'couple',
     photo_url: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80',
     caption: 'A promise etched in time — Together forever',
@@ -167,7 +167,7 @@ export const defaultPhotos: WeddingPhoto[] = [
     is_cover: true
   },
   {
-    id: 'p2',
+    id: '00000000-0000-0000-0002-000000000002',
     category: 'couple',
     photo_url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80',
     caption: 'Beneath the palace arches and twinkling sky',
@@ -177,7 +177,7 @@ export const defaultPhotos: WeddingPhoto[] = [
     is_cover: false
   },
   {
-    id: 'p3',
+    id: '00000000-0000-0000-0002-000000000003',
     category: 'gallery',
     photo_url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80',
     caption: 'Golden hour tranquility by Lake Pichola',
@@ -187,7 +187,7 @@ export const defaultPhotos: WeddingPhoto[] = [
     is_cover: false
   },
   {
-    id: 'p4',
+    id: '00000000-0000-0000-0002-000000000004',
     category: 'gallery',
     photo_url: 'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&w=1200&q=80',
     caption: 'Candid laughter, endless shared dreams',
@@ -197,7 +197,7 @@ export const defaultPhotos: WeddingPhoto[] = [
     is_cover: false
   },
   {
-    id: 'p5',
+    id: '00000000-0000-0000-0002-000000000005',
     category: 'gallery',
     photo_url: 'https://images.unsplash.com/photo-1544077960-604201fe74bc?auto=format&fit=crop&w=1200&q=80',
     caption: 'The radiance of the royal bride',
@@ -207,7 +207,7 @@ export const defaultPhotos: WeddingPhoto[] = [
     is_cover: false
   },
   {
-    id: 'p6',
+    id: '00000000-0000-0000-0002-000000000006',
     category: 'gallery',
     photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=1200&q=80',
     caption: 'The groom awaits his queen',
@@ -218,7 +218,7 @@ export const defaultPhotos: WeddingPhoto[] = [
   },
   // After wedding album photos
   {
-    id: 'aw1',
+    id: '00000000-0000-0000-0003-000000000001',
     album_id: '11111111-1111-1111-1111-111111111111',
     category: 'after_wedding',
     photo_url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80',
@@ -229,7 +229,7 @@ export const defaultPhotos: WeddingPhoto[] = [
     is_cover: true
   },
   {
-    id: 'aw2',
+    id: '00000000-0000-0000-0003-000000000002',
     album_id: '11111111-1111-1111-1111-111111111111',
     category: 'after_wedding',
     photo_url: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80',
@@ -240,7 +240,7 @@ export const defaultPhotos: WeddingPhoto[] = [
     is_cover: false
   },
   {
-    id: 'aw3',
+    id: '00000000-0000-0000-0003-000000000003',
     album_id: '22222222-2222-2222-2222-222222222222',
     category: 'after_wedding',
     photo_url: 'https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=1200&q=80',
@@ -251,7 +251,7 @@ export const defaultPhotos: WeddingPhoto[] = [
     is_cover: true
   },
   {
-    id: 'aw4',
+    id: '00000000-0000-0000-0003-000000000004',
     album_id: '33333333-3333-3333-3333-333333333333',
     category: 'after_wedding',
     photo_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=80',

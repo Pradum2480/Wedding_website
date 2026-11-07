@@ -11,7 +11,9 @@ export const AfterWeddingGallery: React.FC = () => {
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('');
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
 
-  const publishedAlbums = albums.filter(a => a.is_published);
+  const publishedAlbums = albums
+    .filter(a => a.is_published)
+    .sort((a, b) => a.display_order - b.display_order);
 
   useEffect(() => {
     if (publishedAlbums.length > 0 && !selectedAlbumId) {
@@ -23,11 +25,13 @@ export const AfterWeddingGallery: React.FC = () => {
     return null;
   }
 
-  const currentAlbumPhotos = photos.filter(p => 
-    p.is_published && 
-    p.category === 'after_wedding' && 
-    (selectedAlbumId ? p.album_id === selectedAlbumId : true)
-  );
+  const currentAlbumPhotos = photos
+    .filter(p => 
+      p.is_published !== false && 
+      p.category === 'after_wedding' && 
+      (selectedAlbumId ? (p.album_id === selectedAlbumId || (!p.album_id && selectedAlbumId === publishedAlbums[0]?.id)) : true)
+    )
+    .sort((a, b) => (Number(a.display_order) || 999) - (Number(b.display_order) || 999));
 
   const currentAlbum = publishedAlbums.find(a => a.id === selectedAlbumId);
 
