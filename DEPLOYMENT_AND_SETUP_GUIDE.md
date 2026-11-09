@@ -14,8 +14,8 @@ The application includes an **offline-first cached demo mode**. You can start ex
    ```
 2. Open [http://localhost:5173](http://localhost:5173) in your browser.
 3. Click **"Open Invitation"** to experience the animated Royal Gold opening cover.
-4. Access the **Admin Portal** by clicking the discreet **Admin Portal** link in the footer (or go directly to [http://localhost:5173/admin/login](http://localhost:5173/admin/login)).
-5. On the login screen, click **"Click to auto-fill initial demo credentials"** (`admin@wedding.royal` / `RoyalGold2026!`), and explore all dashboard features!
+4. Access the **Admin Portal** by clicking the discreet **Admin Portal** link in the footer (or navigate directly to [http://localhost:5173/admin/login](http://localhost:5173/admin/login)).
+5. Enter your administrator email and password. To prevent unauthorized guest access, the demo auto-fill button has been removed and replaced with brute-force lockout protection. You can change your password at any time in **Admin Portal -> Settings -> Security & Password**.
 
 ---
 

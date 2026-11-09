@@ -1,8 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getSupabaseConfig } from '../../services/supabase';
-import { Lock, Mail, ArrowRight, ShieldCheck, AlertCircle, Sparkles, Key, Phone } from 'lucide-react';
+import { 
+  Lock, 
+  Mail, 
+  ArrowRight, 
+  AlertCircle, 
+  Key, 
+  Phone, 
+  Eye, 
+  EyeOff, 
+  ShieldAlert, 
+  ShieldCheck 
+} from 'lucide-react';
+
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_SECONDS = 60;
 
 export const AdminLogin: React.FC = () => {
   const { signIn } = useAuth();
@@ -11,27 +25,62 @@ export const AdminLogin: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  
+  // Rate-limiting / brute-force protection
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutRemaining, setLockoutRemaining] = useState(0);
+
+  // Lockout countdown timer
+  useEffect(() => {
+    let timer: any;
+    if (lockoutRemaining > 0) {
+      timer = setInterval(() => {
+        setLockoutRemaining((prev) => {
+          if (prev <= 1) {
+            setFailedAttempts(0);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [lockoutRemaining]);
+
+  const isLockedOut = lockoutRemaining > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLockedOut) return;
+
     setErrorMessage('');
     setIsLoading(true);
 
     const res = await signIn(email, password);
 
     if (res.success) {
+      setFailedAttempts(0);
       navigate('/admin/dashboard');
     } else {
-      setErrorMessage(res.error || 'Invalid email or password.');
+      const nextAttempts = failedAttempts + 1;
+      setFailedAttempts(nextAttempts);
+
+      if (nextAttempts >= MAX_ATTEMPTS) {
+        setLockoutRemaining(LOCKOUT_SECONDS);
+        setErrorMessage(`Too many failed login attempts. For security, login is locked for ${LOCKOUT_SECONDS} seconds.`);
+      } else {
+        const remainingTries = MAX_ATTEMPTS - nextAttempts;
+        setErrorMessage(
+          `${res.error || 'Invalid email or password.'} (${remainingTries} attempt${remainingTries === 1 ? '' : 's'} remaining)`
+        );
+      }
     }
     setIsLoading(false);
-  };
-
-  const handleFillDemo = () => {
-    setEmail('admin@wedding.royal');
-    setPassword('RoyalGold2026!');
   };
 
   return (
@@ -56,8 +105,14 @@ export const AdminLogin: React.FC = () => {
           </div>
 
           {errorMessage && (
-            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className={`mb-4 p-3 rounded-xl border text-xs flex items-center space-x-2 ${
+              isLockedOut ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-red-50 border-red-200 text-red-700'
+            }`}>
+              {isLockedOut ? (
+                <ShieldAlert className="w-4 h-4 flex-shrink-0 text-amber-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
+              )}
               <span>{errorMessage}</span>
             </div>
           )}
@@ -72,10 +127,11 @@ export const AdminLogin: React.FC = () => {
                 <input
                   type="email"
                   required
+                  disabled={isLockedOut || isLoading}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@wedding.royal"
-                  className="w-full px-4 py-2.5 pl-10 rounded-xl border border-gold/40 bg-white focus:outline-none focus:ring-2 focus:ring-gold/60 text-sm font-heading"
+                  placeholder="admin@wedding.com"
+                  className="w-full px-4 py-2.5 pl-10 rounded-xl border border-gold/40 bg-white focus:outline-none focus:ring-2 focus:ring-gold/60 text-sm font-heading disabled:bg-gray-100 disabled:opacity-60"
                 />
                 <Mail className="w-4 h-4 text-gold-deep absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -87,44 +143,56 @@ export const AdminLogin: React.FC = () => {
               </label>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
+                  disabled={isLockedOut || isLoading}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full px-4 py-2.5 pl-10 rounded-xl border border-gold/40 bg-white focus:outline-none focus:ring-2 focus:ring-gold/60 text-sm font-heading"
+                  className="w-full px-4 py-2.5 pl-10 pr-10 rounded-xl border border-gold/40 bg-white focus:outline-none focus:ring-2 focus:ring-gold/60 text-sm font-heading disabled:bg-gray-100 disabled:opacity-60"
                 />
                 <Key className="w-4 h-4 text-gold-deep absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  disabled={isLockedOut || isLoading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gold-deep cursor-pointer p-1"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
-              disabled={isLoading}
-              className="btn-royal-maroon w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-md disabled:opacity-50"
+              disabled={isLoading || isLockedOut}
+              className="btn-royal-maroon w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{isLoading ? 'Verifying Credentials...' : 'Sign In to Dashboard'}</span>
+              <span>
+                {isLockedOut
+                  ? `Locked (${lockoutRemaining}s)`
+                  : isLoading
+                  ? 'Verifying Credentials...'
+                  : 'Sign In to Dashboard'}
+              </span>
               <ArrowRight className="w-4 h-4 text-gold" />
             </button>
 
           </form>
 
-          {/* Quick Demo Credentials helper */}
-          <div className="mt-6 pt-5 border-t border-gold/20 text-center">
-            <p className="text-xs text-dark-muted font-heading mb-2">
-              Evaluating locally or haven't connected Supabase yet?
+          {/* Security & Access Notice */}
+          <div className="mt-6 pt-4 border-t border-gold/20 text-center">
+            <div className="inline-flex items-center space-x-1.5 text-xs text-gray-500 font-heading">
+              <ShieldCheck className="w-4 h-4 text-gold-deep" />
+              <span>Restricted Administrator Access</span>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1">
+              Unauthorized access attempts are monitored and rate-limited.
             </p>
-            <button
-              type="button"
-              onClick={handleFillDemo}
-              className="text-xs font-semibold text-gold-deep hover:text-maroon underline inline-flex items-center space-x-1 cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-gold-deep" />
-              <span>Click to auto-fill initial demo credentials</span>
-            </button>
           </div>
 
-          <div className="mt-5 pt-4 border-t border-gold/15 text-center flex flex-col items-center gap-2">
+          <div className="mt-4 pt-3 border-t border-gold/15 text-center flex flex-col items-center gap-2">
             <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-dark-muted font-heading">
               <span>Admin Support:</span>
               <span className="text-dark-text font-semibold">+91 7620 598 347</span>
