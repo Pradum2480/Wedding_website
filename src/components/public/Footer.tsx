@@ -18,7 +18,7 @@ export const Footer: React.FC<FooterProps> = ({ onReplayCover }) => {
         {/* Monogram */}
         <div className="w-16 h-16 rounded-full bg-maroon-deep border-2 border-gold flex items-center justify-center mx-auto mb-4 text-gold shadow-gold-glow">
           <span className="font-couple text-2xl font-bold tracking-wider">
-            {settings.groom_name?.[0] || 'D'} &amp; {settings.bride_name?.[0] || 'P'}
+            {(settings.groom_name?.[0] || '') + (settings.bride_name?.[0] ? ` & ${settings.bride_name[0]}` : '')}
           </span>
         </div>
 

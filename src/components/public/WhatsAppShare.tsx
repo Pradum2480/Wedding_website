@@ -16,9 +16,20 @@ export const WhatsAppShare: React.FC = () => {
     year: 'numeric'
   }) : 'our auspicious wedding day';
 
-  const currentUrl = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : 'https://wedding.royal';
+  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const currentUrl = isLocalhost 
+    ? 'https://wedding-website.pradum2480.workers.dev/' 
+    : (typeof window !== 'undefined' ? window.location.origin + window.location.pathname : 'https://wedding-website.pradum2480.workers.dev/');
 
-  const shareMessage = `🌸 *Wedding Invitation* 🌸\n\nYou are cordially invited to celebrate the wedding of *${settings.groom_name}* & *${settings.bride_name}* on *${formattedDate}* at *${settings.venue_name}, ${settings.city}*.\n\nWe would love to celebrate this joyous milestone with you and receive your warm blessings.\n\n✨ View our complete royal invitation, countdown & RSVP:\n${currentUrl}`;
+  const coupleNames = (settings.groom_name && settings.bride_name)
+    ? `${settings.groom_name} & ${settings.bride_name}`
+    : 'Our Royal Wedding';
+
+  const venueText = settings.venue_name 
+    ? ` at *${settings.venue_name}${settings.city ? ', ' + settings.city : ''}*` 
+    : '';
+
+  const shareMessage = `🌸 *Wedding Invitation* 🌸\n\nYou are cordially invited to celebrate the wedding of *${coupleNames}* on *${formattedDate}*${venueText}.\n\nWe would love to celebrate this joyous milestone with you and receive your warm blessings.\n\n✨ View our complete royal invitation, countdown & RSVP:\n${currentUrl}`;
 
   const handleWhatsAppShare = () => {
     const encoded = encodeURIComponent(shareMessage);

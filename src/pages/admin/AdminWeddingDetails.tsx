@@ -3,6 +3,7 @@ import { useWedding } from '../../context/WeddingContext';
 import { useNotification } from '../../context/NotificationContext';
 import { updateWeddingSettings, uploadMediaFile, validateMediaFile } from '../../services/weddingService';
 import { WeddingSettings } from '../../types/wedding';
+import { ShareInvitationModal } from '../../components/admin/ShareInvitationModal';
 import { 
   Heart, 
   Save, 
@@ -13,7 +14,8 @@ import {
   Clock, 
   User, 
   Sparkles,
-  Info
+  Info,
+  Share2
 } from 'lucide-react';
 
 export const AdminWeddingDetails: React.FC = () => {
@@ -24,6 +26,7 @@ export const AdminWeddingDetails: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadingGroom, setUploadingGroom] = useState(false);
   const [uploadingBride, setUploadingBride] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // Keep form data synchronized when settings are loaded/refreshed from database
   React.useEffect(() => {
@@ -126,6 +129,14 @@ export const AdminWeddingDetails: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-3">
+          <button
+            type="button"
+            onClick={() => setShareModalOpen(true)}
+            className="btn-royal-gold px-4 py-2 rounded-xl text-xs font-semibold inline-flex items-center space-x-1.5 shadow-sm cursor-pointer hover:scale-102 active:scale-98 transition-all"
+          >
+            <Share2 className="w-3.5 h-3.5 text-dark-text" />
+            <span>Share Invitation</span>
+          </button>
           <a
             href="/"
             target="_blank"
@@ -137,6 +148,12 @@ export const AdminWeddingDetails: React.FC = () => {
           </a>
         </div>
       </div>
+
+      {/* Share Invitation Modal */}
+      <ShareInvitationModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+      />
 
       {errorMessage && (
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-center space-x-2">

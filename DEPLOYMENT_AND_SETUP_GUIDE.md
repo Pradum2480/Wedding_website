@@ -85,16 +85,21 @@ The application includes an **offline-first cached demo mode**. You can start ex
 
 ---
 
-### Option B: Cloudflare Pages (Alternative)
-1. In the Cloudflare Dashboard, go to **Workers & Pages** -> **Create Application** -> **Pages**.
-2. Connect to your Git repository.
-3. Build configuration:
-   - Framework preset: `Vite`
+### Option B: Cloudflare Workers & Pages
+1. The included `wrangler.toml` is configured to serve the `./dist` output with native single-page application routing (`not_found_handling = "single-page-application"`).
+2. To deploy directly via Wrangler CLI:
+   ```bash
+   npm run build
+   npx wrangler deploy
+   ```
+3. Or in Cloudflare Dashboard:
+   - Go to **Workers & Pages** -> **Create Application**.
    - Build command: `npm run build`
    - Build output directory: `dist`
-4. Add the environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
-5. Click **Save and Deploy**.
-6. Cloudflare handles SPA routing natively without requiring a `_redirects` file (via Workers Static Assets `not_found_handling: "single-page-application"` or Pages default SPA fallback).
+   - Add environment variables (or rely on the production default integration):
+     - `VITE_SUPABASE_URL` = `https://nxojnptnbhpgfjotebwx.supabase.co`
+     - `VITE_SUPABASE_ANON_KEY` = `sb_publishable_0QNgtjylNEyoEImO2tfU5A_4fqf4X23`
+4. Deployed Public URL: `https://wedding-website.pradum2480.workers.dev/`
 
 ---
 

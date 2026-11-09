@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useWedding } from '../../context/WeddingContext';
 import { fetchRSVPsAdmin } from '../../services/weddingService';
 import { WeddingRSVP } from '../../types/wedding';
+import { ShareInvitationModal } from '../../components/admin/ShareInvitationModal';
 import { 
   Heart, 
   Calendar, 
@@ -16,13 +17,15 @@ import {
   Clock, 
   MapPin,
   ExternalLink,
-  Plus
+  Plus,
+  Share2
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { settings, events, photos, albums } = useWedding();
   const [rsvps, setRsvps] = useState<WeddingRSVP[]>([]);
   const [loadingRSVPs, setLoadingRSVPs] = useState(true);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   useEffect(() => {
     fetchRSVPsAdmin().then(res => {
@@ -73,11 +76,19 @@ export const AdminDashboard: React.FC = () => {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setShareModalOpen(true)}
+              className="btn-royal-gold px-4 py-2 rounded-xl text-xs font-semibold inline-flex items-center space-x-1.5 shadow-md cursor-pointer hover:scale-102 active:scale-98 transition-all"
+            >
+              <Share2 className="w-3.5 h-3.5 text-dark-text" />
+              <span>Share Invitation</span>
+            </button>
             <Link
               to="/admin/wedding-details"
-              className="btn-royal-gold px-4 py-2 rounded-xl text-xs font-semibold inline-flex items-center space-x-1.5 shadow"
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-cream border border-cream/20 inline-flex items-center space-x-1.5"
             >
-              <Heart className="w-3.5 h-3.5" />
+              <Heart className="w-3.5 h-3.5 text-gold" />
               <span>Edit Couple &amp; Wedding</span>
             </Link>
             <Link
@@ -99,6 +110,12 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Share Invitation Modal */}
+      <ShareInvitationModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+      />
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">

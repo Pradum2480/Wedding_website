@@ -157,13 +157,14 @@ export const fetchWeddingSettings = async (): Promise<{ data: WeddingSettings; i
   const client = getSupabaseClient();
 
   if (!client) {
-    return { data: cached, isCached: true };
+    return { data: cached, isCached: true, error: 'Database client not initialized' };
   }
 
   try {
     const { data, error } = await client
       .from('wedding_settings')
       .select('*')
+      .order('created_at', { ascending: true })
       .limit(1)
       .single();
 
@@ -188,14 +189,13 @@ export const updateWeddingSettings = async (settings: Partial<WeddingSettings>):
   const client = getSupabaseClient();
   const current = getCachedItem<WeddingSettings>(CACHE_KEY_SETTINGS, defaultWeddingSettings);
   const updated: WeddingSettings = { ...current, ...settings, updated_at: new Date().toISOString() };
-  setCachedItem(CACHE_KEY_SETTINGS, updated);
 
   if (!client) {
-    return { success: true, data: updated };
+    return { success: false, error: 'Database connection is not configured.' };
   }
 
   try {
-    // If id exists, update, else insert or upsert
+    // Singleton record ID
     const id = current.id || '00000000-0000-0000-0000-000000000001';
     const { data, error } = await client
       .from('wedding_settings')
@@ -217,13 +217,13 @@ export const updateWeddingSettings = async (settings: Partial<WeddingSettings>):
 // ==========================================
 // 2. WEDDING EVENTS
 // ==========================================
-export const fetchWeddingEvents = async (publishedOnly = true): Promise<{ data: WeddingEvent[]; isCached: boolean }> => {
+export const fetchWeddingEvents = async (publishedOnly = true): Promise<{ data: WeddingEvent[]; isCached: boolean; error?: string }> => {
   const cached = getCachedItem<WeddingEvent[]>(CACHE_KEY_EVENTS, defaultEvents);
   const client = getSupabaseClient();
 
   if (!client) {
     const filtered = publishedOnly ? cached.filter(e => e.is_published) : cached;
-    return { data: filtered.sort((a, b) => a.display_order - b.display_order), isCached: true };
+    return { data: filtered.sort((a, b) => a.display_order - b.display_order), isCached: true, error: 'Database client not initialized' };
   }
 
   try {
@@ -238,24 +238,31 @@ export const fetchWeddingEvents = async (publishedOnly = true): Promise<{ data: 
 
     const { data, error } = await query;
 
-    if (error || !data || data.length === 0) {
+    if (error) {
+      console.warn('Supabase fetchWeddingEvents error:', error.message);
       const filtered = publishedOnly ? cached.filter(e => e.is_published) : cached;
-      return { data: filtered.sort((a, b) => a.display_order - b.display_order), isCached: true };
+      return { data: filtered.sort((a, b) => a.display_order - b.display_order), isCached: true, error: error.message };
     }
 
+    const eventList = data || [];
     if (!publishedOnly) {
-      setCachedItem(CACHE_KEY_EVENTS, data);
+      setCachedItem(CACHE_KEY_EVENTS, eventList);
     }
-    return { data, isCached: false };
-  } catch {
+    return { data: eventList, isCached: false };
+  } catch (err: any) {
+    console.warn('Network exception while fetching events:', err.message);
     const filtered = publishedOnly ? cached.filter(e => e.is_published) : cached;
-    return { data: filtered.sort((a, b) => a.display_order - b.display_order), isCached: true };
+    return { data: filtered.sort((a, b) => a.display_order - b.display_order), isCached: true, error: err.message };
   }
 };
 
 export const saveWeddingEvent = async (event: Partial<WeddingEvent>): Promise<{ success: boolean; data?: WeddingEvent; error?: string }> => {
   const client = getSupabaseClient();
   const cached = getCachedItem<WeddingEvent[]>(CACHE_KEY_EVENTS, defaultEvents);
+
+  if (!client) {
+    return { success: false, error: 'Database connection is not configured.' };
+  }
 
   // 1. Prepare target event
   const isExisting = Boolean(event.id && cached.some(e => e.id === event.id));
@@ -275,19 +282,12 @@ export const saveWeddingEvent = async (event: Partial<WeddingEvent>): Promise<{ 
 
   // 2. Perform sequential reordering across the event collection
   const reorderedEvents = reorderWeddingEventsList(cached, targetEvent, rawOrder);
-  setCachedItem(CACHE_KEY_EVENTS, reorderedEvents);
-
-  const updatedTarget = reorderedEvents.find(e => e.id === eventId) || targetEvent;
-
-  if (!client) {
-    return { success: true, data: updatedTarget };
-  }
 
   try {
     // Ensure valid UUID records for Supabase to prevent PostgreSQL syntax errors
-    const finalTargetId = isValidUUID(updatedTarget.id) ? updatedTarget.id : generateUUID();
-    const dbPayload = { ...updatedTarget, id: finalTargetId };
-    const normalizedEvents = reorderedEvents.map(e => e.id === updatedTarget.id ? { ...e, id: finalTargetId } : e);
+    const finalTargetId = isValidUUID(updatedTargetId(targetEvent.id)) ? updatedTargetId(targetEvent.id) : generateUUID();
+    const dbPayload = { ...targetEvent, id: finalTargetId };
+    const normalizedEvents = reorderedEvents.map(e => e.id === targetEvent.id ? { ...e, id: finalTargetId } : e);
 
     const { data, error } = await client
       .from('wedding_events')
@@ -296,9 +296,8 @@ export const saveWeddingEvent = async (event: Partial<WeddingEvent>): Promise<{ 
       .single();
 
     if (error) {
-      console.warn('Supabase event save warning, saved to local cache:', error.message);
-      setCachedItem(CACHE_KEY_EVENTS, normalizedEvents);
-      return { success: true, data: dbPayload };
+      console.warn('Supabase event save error:', error.message);
+      return { success: false, error: error.message };
     }
 
     // Sync updated reordered positions to Supabase for all other valid events
@@ -317,28 +316,34 @@ export const saveWeddingEvent = async (event: Partial<WeddingEvent>): Promise<{ 
 
     return { success: true, data };
   } catch (err: any) {
-    console.warn('Supabase event save exception, saved to local cache:', err);
-    return { success: true, data: updatedTarget };
+    console.warn('Supabase event save exception:', err);
+    return { success: false, error: err.message || 'Failed to save event.' };
   }
 };
+
+const updatedTargetId = (id?: string) => (id && isValidUUID(id) ? id : generateUUID());
 
 export const deleteWeddingEvent = async (id: string): Promise<{ success: boolean; error?: string }> => {
   const client = getSupabaseClient();
   const cached = getCachedItem<WeddingEvent[]>(CACHE_KEY_EVENTS, defaultEvents);
   
+  if (!client) {
+    return { success: false, error: 'Database connection is not configured.' };
+  }
+
   // Remove and re-index remaining events sequentially 1..N
   const remaining = cached
     .filter(e => e.id !== id)
     .sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0))
     .map((e, idx) => ({ ...e, display_order: idx + 1 }));
 
-  setCachedItem(CACHE_KEY_EVENTS, remaining);
-
-  if (!client) return { success: true };
-
   try {
     if (isValidUUID(id)) {
-      await client.from('wedding_events').delete().eq('id', id);
+      const { error } = await client.from('wedding_events').delete().eq('id', id);
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
       const validRemaining = remaining.filter(e => isValidUUID(e.id));
       if (validRemaining.length > 0) {
         try {
@@ -348,23 +353,24 @@ export const deleteWeddingEvent = async (id: string): Promise<{ success: boolean
         }
       }
     }
+    setCachedItem(CACHE_KEY_EVENTS, remaining);
     return { success: true };
   } catch (err: any) {
-    console.warn('Supabase deleteWeddingEvent warning:', err);
-    return { success: true };
+    console.warn('Supabase deleteWeddingEvent error:', err);
+    return { success: false, error: err.message || 'Failed to delete event.' };
   }
 };
 
 // ==========================================
 // 3. ALBUMS & AFTER-WEDDING
 // ==========================================
-export const fetchWeddingAlbums = async (publishedOnly = true): Promise<{ data: WeddingAlbum[]; isCached: boolean }> => {
+export const fetchWeddingAlbums = async (publishedOnly = true): Promise<{ data: WeddingAlbum[]; isCached: boolean; error?: string }> => {
   const cached = getCachedItem<WeddingAlbum[]>(CACHE_KEY_ALBUMS, defaultAlbums);
   const client = getSupabaseClient();
 
   if (!client) {
     const filtered = publishedOnly ? cached.filter(a => a.is_published) : cached;
-    return { data: filtered.sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0)), isCached: true };
+    return { data: filtered.sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0)), isCached: true, error: 'Database client not initialized' };
   }
 
   try {
@@ -378,24 +384,30 @@ export const fetchWeddingAlbums = async (publishedOnly = true): Promise<{ data: 
     }
 
     const { data, error } = await query;
-    if (error || !data || data.length === 0) {
+    if (error) {
+      console.warn('Supabase fetchWeddingAlbums error:', error.message);
       const filtered = publishedOnly ? cached.filter(a => a.is_published) : cached;
-      return { data: filtered.sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0)), isCached: true };
+      return { data: filtered.sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0)), isCached: true, error: error.message };
     }
 
+    const albumList = data || [];
     if (!publishedOnly) {
-      setCachedItem(CACHE_KEY_ALBUMS, data);
+      setCachedItem(CACHE_KEY_ALBUMS, albumList);
     }
-    return { data, isCached: false };
-  } catch {
+    return { data: albumList, isCached: false };
+  } catch (err: any) {
     const filtered = publishedOnly ? cached.filter(a => a.is_published) : cached;
-    return { data: filtered.sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0)), isCached: true };
+    return { data: filtered.sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0)), isCached: true, error: err.message };
   }
 };
 
 export const saveWeddingAlbum = async (album: Partial<WeddingAlbum>): Promise<{ success: boolean; data?: WeddingAlbum; error?: string }> => {
   const client = getSupabaseClient();
   const cached = getCachedItem<WeddingAlbum[]>(CACHE_KEY_ALBUMS, defaultAlbums);
+
+  if (!client) {
+    return { success: false, error: 'Database connection is not configured.' };
+  }
 
   const albumId = album.id || generateUUID();
   const displayOrder = album.display_order !== undefined && !isNaN(Number(album.display_order))
@@ -416,11 +428,6 @@ export const saveWeddingAlbum = async (album: Partial<WeddingAlbum>): Promise<{ 
     : [...cached, targetAlbum];
 
   const sortedList = updatedList.sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0));
-  setCachedItem(CACHE_KEY_ALBUMS, sortedList);
-
-  if (!client) {
-    return { success: true, data: targetAlbum };
-  }
 
   try {
     const dbPayload = isValidUUID(targetAlbum.id) ? targetAlbum : { ...targetAlbum, id: generateUUID() };
@@ -431,37 +438,45 @@ export const saveWeddingAlbum = async (album: Partial<WeddingAlbum>): Promise<{ 
       .single();
 
     if (error) {
-      console.warn('Supabase album save warning, saved to local cache:', error.message);
-      return { success: true, data: targetAlbum };
+      console.warn('Supabase album save error:', error.message);
+      return { success: false, error: error.message };
     }
 
     const finalCached = sortedList.map(a => a.id === data.id ? data : a);
     setCachedItem(CACHE_KEY_ALBUMS, finalCached);
     return { success: true, data };
   } catch (err: any) {
-    console.warn('Supabase album save exception, saved to local cache:', err);
-    return { success: true, data: targetAlbum };
+    console.warn('Supabase album save exception:', err);
+    return { success: false, error: err.message || 'Failed to save album.' };
   }
 };
 
 export const deleteWeddingAlbum = async (id: string): Promise<{ success: boolean; error?: string }> => {
   const client = getSupabaseClient();
   const cached = getCachedItem<WeddingAlbum[]>(CACHE_KEY_ALBUMS, defaultAlbums);
-  setCachedItem(CACHE_KEY_ALBUMS, cached.filter(a => a.id !== id));
 
-  // Also clean up photos associated with this album
-  const cachedPhotos = getCachedItem<WeddingPhoto[]>(CACHE_KEY_PHOTOS, defaultPhotos);
-  setCachedItem(CACHE_KEY_PHOTOS, cachedPhotos.filter(p => p.album_id !== id));
-
-  if (!client) return { success: true };
+  if (!client) {
+    return { success: false, error: 'Database connection is not configured.' };
+  }
 
   try {
     if (isValidUUID(id)) {
-      await client
+      const { error } = await client
         .from('wedding_albums')
         .delete()
         .eq('id', id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
     }
+
+    setCachedItem(CACHE_KEY_ALBUMS, cached.filter(a => a.id !== id));
+
+    // Clean up photos associated with this album
+    const cachedPhotos = getCachedItem<WeddingPhoto[]>(CACHE_KEY_PHOTOS, defaultPhotos);
+    setCachedItem(CACHE_KEY_PHOTOS, cachedPhotos.filter(p => p.album_id !== id));
+
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -471,7 +486,7 @@ export const deleteWeddingAlbum = async (id: string): Promise<{ success: boolean
 // ==========================================
 // 4. WEDDING PHOTOS
 // ==========================================
-export const fetchWeddingPhotos = async (category?: string, albumId?: string, publishedOnly = true): Promise<{ data: WeddingPhoto[]; isCached: boolean }> => {
+export const fetchWeddingPhotos = async (category?: string, albumId?: string, publishedOnly = true): Promise<{ data: WeddingPhoto[]; isCached: boolean; error?: string }> => {
   const cached = getCachedItem<WeddingPhoto[]>(CACHE_KEY_PHOTOS, defaultPhotos);
   const client = getSupabaseClient();
 
@@ -485,7 +500,7 @@ export const fetchWeddingPhotos = async (category?: string, albumId?: string, pu
   };
 
   if (!client) {
-    return { data: filterMemory(cached), isCached: true };
+    return { data: filterMemory(cached), isCached: true, error: 'Database client not initialized' };
   }
 
   try {
@@ -505,27 +520,32 @@ export const fetchWeddingPhotos = async (category?: string, albumId?: string, pu
     }
 
     const { data, error } = await query;
-    if (error || !data || data.length === 0) {
-      return { data: filterMemory(cached), isCached: true };
+    if (error) {
+      console.warn('Supabase fetchWeddingPhotos error:', error.message);
+      return { data: filterMemory(cached), isCached: true, error: error.message };
     }
 
+    const photoList = data || [];
     if (!category && !albumId && !publishedOnly) {
-      setCachedItem(CACHE_KEY_PHOTOS, data);
+      setCachedItem(CACHE_KEY_PHOTOS, photoList);
     } else {
-      // Merge into local cache
-      const existing = cached.filter(p => !data.some(d => d.id === p.id));
-      setCachedItem(CACHE_KEY_PHOTOS, [...existing, ...data]);
+      const existing = cached.filter(p => !photoList.some(d => d.id === p.id));
+      setCachedItem(CACHE_KEY_PHOTOS, [...existing, ...photoList]);
     }
 
-    return { data, isCached: false };
-  } catch {
-    return { data: filterMemory(cached), isCached: true };
+    return { data: photoList, isCached: false };
+  } catch (err: any) {
+    return { data: filterMemory(cached), isCached: true, error: err.message };
   }
 };
 
 export const saveWeddingPhoto = async (photo: Partial<WeddingPhoto>): Promise<{ success: boolean; data?: WeddingPhoto; error?: string }> => {
   const client = getSupabaseClient();
   const cached = getCachedItem<WeddingPhoto[]>(CACHE_KEY_PHOTOS, defaultPhotos);
+
+  if (!client) {
+    return { success: false, error: 'Database connection is not configured.' };
+  }
 
   const photoId = photo.id || generateUUID();
   const displayOrder = photo.display_order !== undefined && !isNaN(Number(photo.display_order))
@@ -546,14 +566,7 @@ export const saveWeddingPhoto = async (photo: Partial<WeddingPhoto>): Promise<{ 
     ? cached.map(p => p.id === photo.id ? targetPhoto : p)
     : [...cached, targetPhoto];
 
-  setCachedItem(CACHE_KEY_PHOTOS, updatedList);
-
-  if (!client) {
-    return { success: true, data: targetPhoto };
-  }
-
   try {
-    // Sanitize payload for PostgreSQL UUID column
     const albumId = photo.album_id && isValidUUID(photo.album_id) ? photo.album_id : null;
     const dbPayload = {
       ...targetPhoto,
@@ -568,7 +581,7 @@ export const saveWeddingPhoto = async (photo: Partial<WeddingPhoto>): Promise<{ 
       .single();
 
     if (error) {
-      console.warn('Supabase photo save warning, saved to local cache:', error.message);
+      console.warn('Supabase photo save error:', error.message);
       return { success: false, error: error.message };
     }
 
@@ -577,7 +590,7 @@ export const saveWeddingPhoto = async (photo: Partial<WeddingPhoto>): Promise<{ 
     return { success: true, data };
   } catch (err: any) {
     console.warn('Supabase photo save exception:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: err.message || 'Failed to save photo.' };
   }
 };
 
@@ -585,17 +598,24 @@ export const deleteWeddingPhoto = async (id: string): Promise<{ success: boolean
   const client = getSupabaseClient();
   const cached = getCachedItem<WeddingPhoto[]>(CACHE_KEY_PHOTOS, defaultPhotos);
   const targetPhoto = cached.find(p => p.id === id);
-  setCachedItem(CACHE_KEY_PHOTOS, cached.filter(p => p.id !== id));
 
-  if (!client) return { success: true };
+  if (!client) {
+    return { success: false, error: 'Database connection is not configured.' };
+  }
 
   try {
     if (isValidUUID(id)) {
-      await client
+      const { error } = await client
         .from('wedding_photos')
         .delete()
         .eq('id', id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
     }
+
+    setCachedItem(CACHE_KEY_PHOTOS, cached.filter(p => p.id !== id));
 
     if (targetPhoto?.photo_url && targetPhoto.photo_url.includes('wedding-media/')) {
       const match = targetPhoto.photo_url.split('wedding-media/')[1];
@@ -633,7 +653,7 @@ const defaultDemoRSVPs: WeddingRSVP[] = [
     attendance_status: 'attending',
     attendees_count: 1,
     phone_number: '+91 98111 22334',
-    message: 'So thrilled for Devendra and Priyanka! Wishing you both a lifetime of love and joy.',
+    message: 'So thrilled for the royal couple! Wishing you both a lifetime of love and joy.',
     submitted_at: new Date(Date.now() - 86400000 * 3).toISOString()
   },
   {
@@ -838,10 +858,9 @@ export const updateWebsiteSettings = async (settings: Partial<WebsiteSettings>):
   const client = getSupabaseClient();
   const current = getCachedItem<WebsiteSettings>(CACHE_KEY_WEBSITE, defaultWebsiteSettings);
   const updated = { ...current, ...settings, updated_at: new Date().toISOString() };
-  setCachedItem(CACHE_KEY_WEBSITE, updated);
 
   if (!client) {
-    return { success: true, data: updated };
+    return { success: false, error: 'Database connection is not configured.' };
   }
 
   try {

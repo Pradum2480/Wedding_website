@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getSupabaseConfig } from '../../services/supabase';
+import { ShareInvitationModal } from './ShareInvitationModal';
 import { 
   LayoutDashboard, 
   Heart, 
@@ -17,7 +18,8 @@ import {
   Database,
   ShieldCheck,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Share2
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -29,6 +31,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const config = getSupabaseConfig();
 
   const handleSignOut = async () => {
@@ -105,6 +108,17 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <span className="hidden sm:inline">View Public Website</span>
             </a>
 
+            {/* Share Invitation Button */}
+            <button
+              type="button"
+              onClick={() => setShareModalOpen(true)}
+              className="btn-royal-gold px-3.5 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center space-x-1.5 shadow-sm cursor-pointer hover:scale-102 active:scale-98 transition-all"
+              title="Share Public Wedding Invitation"
+            >
+              <Share2 className="w-3.5 h-3.5 text-dark-text" />
+              <span>Share Invitation</span>
+            </button>
+
             {/* Sign Out */}
             <button
               onClick={handleSignOut}
@@ -118,6 +132,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
         </div>
       </header>
+
+      {/* Share Invitation Royal Modal */}
+      <ShareInvitationModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+      />
 
       {/* Main Container */}
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row gap-6">

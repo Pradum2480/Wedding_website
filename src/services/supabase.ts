@@ -1,13 +1,18 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+// Storage keys for runtime configuration overrides
 const STORAGE_KEY_URL = 'wedding_supabase_url';
 const STORAGE_KEY_KEY = 'wedding_supabase_anon_key';
+
+// Production Supabase Project credentials (anon / publishable public key protected by PostgreSQL RLS)
+export const DEFAULT_SUPABASE_URL = 'https://nxojnptnbhpgfjotebwx.supabase.co';
+export const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_0QNgtjylNEyoEImO2tfU5A_4fqf4X23';
 
 export interface SupabaseConfig {
   url: string;
   anonKey: string;
   isConfigured: boolean;
-  source: 'env' | 'storage' | 'none';
+  source: 'env' | 'storage' | 'default' | 'none';
 }
 
 const cleanUrl = (url: string | undefined): string => {
@@ -22,7 +27,8 @@ export const getSupabaseConfig = (): SupabaseConfig => {
   const storedUrl = typeof window !== 'undefined' ? cleanUrl(localStorage.getItem(STORAGE_KEY_URL) || '') : '';
   const storedKey = typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_KEY_KEY) || '').trim() : '';
 
-  if (storedUrl && storedKey) {
+  // 1. Runtime override in localStorage (if set via admin settings)
+  if (storedUrl && storedKey && !storedUrl.includes('your-project-id')) {
     return {
       url: storedUrl,
       anonKey: storedKey,
@@ -31,12 +37,23 @@ export const getSupabaseConfig = (): SupabaseConfig => {
     };
   }
 
+  // 2. Build-time environment variables
   if (envUrl && envKey && !envUrl.includes('your-project-id')) {
     return {
       url: envUrl,
       anonKey: envKey,
       isConfigured: true,
       source: 'env'
+    };
+  }
+
+  // 3. Official production Supabase instance default (ensures public website always connects even without .env)
+  if (DEFAULT_SUPABASE_URL && DEFAULT_SUPABASE_ANON_KEY) {
+    return {
+      url: DEFAULT_SUPABASE_URL,
+      anonKey: DEFAULT_SUPABASE_ANON_KEY,
+      isConfigured: true,
+      source: 'default'
     };
   }
 
@@ -76,6 +93,13 @@ export const getSupabaseClient = (): SupabaseClient | null => {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
+        },
+        global: {
+          headers: {
+            'x-client-info': 'royal-wedding-web',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
         }
       });
     }

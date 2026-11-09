@@ -29,6 +29,7 @@ interface WeddingContextType {
   websiteSettings: WebsiteSettings;
   isCached: boolean;
   isLoading: boolean;
+  fetchError: string | null;
   refreshData: () => Promise<void>;
   musicPlaying: boolean;
   toggleMusic: () => void;
@@ -45,6 +46,7 @@ const WeddingContext = createContext<WeddingContextType>({
   websiteSettings: defaultWebsiteSettings,
   isCached: true,
   isLoading: true,
+  fetchError: null,
   refreshData: async () => {},
   musicPlaying: false,
   toggleMusic: () => {},
@@ -61,12 +63,14 @@ export const WeddingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [websiteSettings, setWebsiteSettings] = useState<WebsiteSettings>(defaultWebsiteSettings);
   const [isCached, setIsCached] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [hasOpenedInvitation, setHasOpenedInvitation] = useState(false);
 
   const loadAllData = useCallback(async () => {
     setIsLoading(true);
+    setFetchError(null);
     try {
       const [settingsRes, eventsRes, albumsRes, photosRes, websiteRes] = await Promise.all([
         fetchWeddingSettings(),
@@ -83,8 +87,14 @@ export const WeddingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setWebsiteSettings(websiteRes.data);
 
       setIsCached(settingsRes.isCached && eventsRes.isCached);
-    } catch (e) {
+
+      // Dynamic document title update with actual couple names
+      if (typeof document !== 'undefined' && settingsRes.data.groom_name && settingsRes.data.bride_name) {
+        document.title = `${settingsRes.data.groom_name} & ${settingsRes.data.bride_name} | Royal Wedding Invitation`;
+      }
+    } catch (e: any) {
       console.warn('Error loading wedding data:', e);
+      setFetchError(e.message || 'Failed to load wedding details');
     } finally {
       setIsLoading(false);
     }
@@ -126,6 +136,7 @@ export const WeddingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       websiteSettings,
       isCached,
       isLoading,
+      fetchError,
       refreshData: loadAllData,
       musicPlaying,
       toggleMusic,
